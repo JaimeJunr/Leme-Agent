@@ -120,8 +120,10 @@ pub struct Shared {
     pub todos: Mutex<Vec<TodoItem>>,
     pub jobs: Jobs,
     pub checkpoints: Mutex<Checkpoints>,
-    /// Current user turn number (index used for checkpoints).
+    /// Current user turn id (checkpoints are keyed by it).
     pub turn: AtomicUsize,
+    /// Next turn id (monotonic for the whole session, survives compaction).
+    pub next_turn: AtomicUsize,
     /// Files modified during the current user turn.
     pub modified: Mutex<BTreeSet<PathBuf>>,
     /// Nested AGENTS.md files already surfaced to the model.

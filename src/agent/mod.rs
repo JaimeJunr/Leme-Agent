@@ -371,12 +371,22 @@ impl Agent {
     fn drain_steer(&mut self) {
         let msgs: Vec<String> = std::mem::take(&mut *self.steer.lock());
         for m in msgs {
+            // A steering message starts a new checkpoint turn so rewinding to
+            // it restores exactly the edits made after it.
+            let turn = (self.depth == 0).then(|| self.begin_turn());
             self.push(Item::User {
                 content: format!("[The user sent this message while you were working — take it into account]\n{m}"),
                 images: vec![],
                 synthetic: false,
+                turn,
             });
         }
+    }
+
+    fn begin_turn(&self) -> usize {
+        let t = self.shared.next_turn.fetch_add(1, Ordering::SeqCst);
+        self.shared.turn.store(t, Ordering::SeqCst);
+        t
     }
 
     /// Run one user turn to completion.
@@ -415,13 +425,14 @@ impl Agent {
                     h.context.join("\n")
                 ));
             }
-            self.shared.turn.store(self.user_turns(), Ordering::SeqCst);
             self.shared.modified.lock().clear();
         }
+        let turn = (self.depth == 0).then(|| self.begin_turn());
         self.push(Item::User {
             content: text,
             images: input.images,
             synthetic: false,
+            turn,
         });
         if self.depth == 0 && !self.title_done && self.shared.interactive {
             self.title_done = true;
@@ -1035,19 +1046,8 @@ impl Agent {
         turn: usize,
         restore_files: bool,
     ) -> anyhow::Result<(Option<String>, Vec<std::path::PathBuf>)> {
-        let mut seen = 0;
-        let mut cut = None;
-        for (i, it) in self.items.iter().enumerate() {
-            if it.is_real_user() {
-                if seen == turn {
-                    cut = Some(i);
-                    break;
-                }
-                seen += 1;
-            }
-        }
-        let Some(cut) = cut else {
-            anyhow::bail!("no such turn")
+        let Some(cut) = self.items.iter().position(|i| i.turn() == Some(turn)) else {
+            anyhow::bail!("that message is no longer in the conversation")
         };
         let text = match &self.items[cut] {
             Item::User { content, .. } => Some(content.clone()),

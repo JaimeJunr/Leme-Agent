@@ -318,22 +318,21 @@ fn effort(app: &mut App, args: &str) {
 }
 
 async fn compact(app: &mut App, args: &str) {
-    let Some(mut agent) = app.agent.take() else {
-        return;
-    };
-    app.info("compacting…");
-    app.draw_now();
-    let cancel = tokio_util::sync::CancellationToken::new();
-    let r = agent
-        .compact(if args.is_empty() { None } else { Some(args) }, &cancel)
-        .await;
-    app.agent = Some(agent);
-    while let Ok(ev) = app.rx.try_recv() {
-        app.on_agent_event(ev);
-    }
-    if let Err(e) = r {
-        app.error(&format!("compaction failed: {e:#}"));
-    }
+    // Runs in the background like a turn: the UI stays live and esc cancels.
+    let instructions = args.to_string();
+    app.start_task("Compacting context", move |mut agent, cancel| async move {
+        let focus = if instructions.is_empty() {
+            None
+        } else {
+            Some(instructions.as_str())
+        };
+        if let Err(e) = agent.compact(focus, &cancel).await
+            && !cancel.is_cancelled()
+        {
+            agent.events.warn(format!("compaction failed: {e:#}"));
+        }
+        agent
+    });
 }
 
 fn clear(app: &mut App) {
@@ -394,6 +393,10 @@ fn load_session(app: &mut App, path: &str) {
     *app.shared.session.write() = std::sync::Arc::new(session);
     *app.shared.todos.lock() = rep.todos.clone();
     app.shared.checkpoints.lock().entries = rep.checkpoints.clone();
+    app.shared.next_turn.store(
+        crate::session::next_turn_id(&rep),
+        std::sync::atomic::Ordering::SeqCst,
+    );
     *app.shared.total_usage.lock() = rep.usage.clone();
     *app.shared.title.lock() = rep.title.clone();
     app.todos = rep.todos.clone();
@@ -455,15 +458,15 @@ pub fn open_rewind(app: &mut App) {
         app.warn("wait for the agent to finish (esc to interrupt)");
         return;
     };
-    let users: Vec<String> = agent
+    let users: Vec<(usize, String)> = agent
         .items
         .iter()
         .filter_map(|i| match i {
             Item::User {
                 content,
-                synthetic: false,
+                turn: Some(t),
                 ..
-            } => Some(content.clone()),
+            } => Some((*t, content.clone())),
             _ => None,
         })
         .collect();
@@ -474,9 +477,9 @@ pub fn open_rewind(app: &mut App) {
     let ck = app.shared.checkpoints.lock();
     let items: Vec<PickItem> = users
         .iter()
-        .enumerate()
         .rev()
         .map(|(i, u)| {
+            let i = *i;
             let files = ck.files_since(i).len();
             PickItem {
                 label: crate::util::first_line(u, 70),
@@ -509,8 +512,7 @@ fn rewind_to(app: &mut App, turn: usize) {
                 .map(|p| crate::util::display_path(&app.shared.root, p))
                 .collect();
             app.info(&format!(
-                "rewound to before message {}{}",
-                turn + 1,
+                "rewound to before that message{}",
                 if files.is_empty() {
                     String::new()
                 } else {
@@ -526,12 +528,14 @@ fn rewind_to(app: &mut App, turn: usize) {
 }
 
 fn undo(app: &mut App) {
-    let n = app.agent.as_ref().map(|a| a.user_turns()).unwrap_or(0);
-    if n == 0 {
-        app.info("nothing to undo");
-        return;
+    let last = app
+        .agent
+        .as_ref()
+        .and_then(|a| a.items.iter().rev().find_map(|i| i.turn()));
+    match last {
+        Some(t) => rewind_to(app, t),
+        None => app.info("nothing to undo"),
     }
-    rewind_to(app, n - 1);
 }
 
 async fn diff(app: &mut App) {
@@ -867,6 +871,7 @@ pub async fn shell(app: &mut App, cmd: &str) {
             content: format!("[I ran a shell command myself]\n$ {cmd}\n{body}\n[exit {code}]"),
             images: vec![],
             synthetic: false,
+            turn: None,
         });
     }
 }
@@ -896,6 +901,7 @@ pub fn remember(app: &mut App, note: &str) {
             content: format!("[Remember for the rest of this project] {note}"),
             images: vec![],
             synthetic: true,
+            turn: None,
         });
     }
 }

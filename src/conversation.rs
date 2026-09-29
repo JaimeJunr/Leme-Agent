@@ -31,6 +31,9 @@ pub enum Item {
         /// hook output…) rather than typed by the human.
         #[serde(default, skip_serializing_if = "is_false")]
         synthetic: bool,
+        /// Monotonic turn id (checkpoints and rewind are keyed by it).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        turn: Option<usize>,
     },
     Assistant {
         #[serde(default)]
@@ -69,6 +72,7 @@ impl Item {
             content: s.into(),
             images: vec![],
             synthetic: false,
+            turn: None,
         }
     }
     pub fn synthetic(s: impl Into<String>) -> Item {
@@ -76,6 +80,7 @@ impl Item {
             content: s.into(),
             images: vec![],
             synthetic: true,
+            turn: None,
         }
     }
 
@@ -101,6 +106,13 @@ impl Item {
             Item::Tool {
                 content, images, ..
             } => est(content) + images.len() * 1200 + 5,
+        }
+    }
+
+    pub fn turn(&self) -> Option<usize> {
+        match self {
+            Item::User { turn, .. } => *turn,
+            _ => None,
         }
     }
 

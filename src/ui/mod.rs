@@ -160,6 +160,8 @@ pub struct App {
     dirty: bool,
     tool_outputs: std::collections::HashMap<String, VecDeque<String>>,
     preparing: Option<String>,
+    /// Label for background work that is not a model turn (e.g. compaction).
+    busy: Option<String>,
 }
 
 fn tool_label(name: &str) -> String {
@@ -252,6 +254,7 @@ impl App {
             dirty: true,
             tool_outputs: Default::default(),
             preparing: None,
+            busy: None,
         })
     }
 
@@ -488,6 +491,8 @@ impl App {
                 event,
             } => self.on_sub_event(task_id, label, *event),
             AgentEvent::Compacted { before, after } => {
+                self.context.0 = after;
+                self.usage = self.shared.total_usage.lock().clone();
                 self.info(&format!(
                     "context compacted: {} → {} tokens",
                     fmt_tokens(before),
@@ -753,6 +758,7 @@ impl App {
             }
             let el = self.turn_started.map(|t| t.elapsed()).unwrap_or_default();
             let doing = match &self.preparing {
+                _ if self.busy.is_some() => self.busy.clone().unwrap_or_default(),
                 // A long tool call (e.g. writing a big file) is streaming.
                 Some(t) if self.tools.is_empty() => format!("Preparing {}", tool_label(t)),
                 _ => self
@@ -1781,7 +1787,26 @@ impl App {
         self.dirty = true;
     }
 
+    /// Run background work on the agent (it is handed back when done).
+    pub fn start_task<F, Fut>(&mut self, label: &str, f: F)
+    where
+        F: FnOnce(Agent, CancellationToken) -> Fut + Send + 'static,
+        Fut: std::future::Future<Output = Agent> + Send + 'static,
+    {
+        let Some(agent) = self.agent.take() else {
+            self.warn("agent busy");
+            return;
+        };
+        let cancel = CancellationToken::new();
+        self.cancel = Some(cancel.clone());
+        self.turn_started = Some(Instant::now());
+        self.busy = Some(label.to_string());
+        self.turn_handle = Some(tokio::spawn(f(agent, cancel)));
+        self.dirty = true;
+    }
+
     fn on_turn_finished(&mut self, agent: Agent) {
+        self.busy = None;
         self.model = agent.model.clone();
         self.effort = agent.effort.clone();
         self.agent = Some(agent);

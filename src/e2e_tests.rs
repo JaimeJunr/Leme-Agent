@@ -391,3 +391,47 @@ async fn steer_messages_are_injected() {
             .contains("also check tests")
     );
 }
+
+#[tokio::test]
+async fn rewind_after_compaction_only_reverts_that_turn() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("a.txt"), "v0").unwrap();
+    let mock = Mock::start(vec![
+        // turn 0: edit a.txt v0 -> v1
+        tool("e1", "edit", json!({"path": "a.txt", "old_string": "v0", "new_string": "v1"})),
+        say("ok"),
+        // turn 1: edit a.txt v1 -> v2
+        tool("e2", "edit", json!({"path": "a.txt", "old_string": "v1", "new_string": "v2"})),
+        say("ok"),
+        // manual compaction summary
+        say("## 1. User requests\nTwo edits of a.txt were requested and done; nothing else is pending right now."),
+        // turn 2 (after compaction): v2 -> v3
+        tool("e3", "edit", json!({"path": "a.txt", "old_string": "v2", "new_string": "v3"})),
+        say("ok"),
+    ])
+    .await;
+    let mut b = boot(dir.path(), &mock, "accept-edits", |_| {}).await;
+    run(&mut b.agent, "first").await;
+    run(&mut b.agent, "second").await;
+    b.agent
+        .compact(None, &CancellationToken::new())
+        .await
+        .unwrap();
+    run(&mut b.agent, "third").await;
+    assert_eq!(
+        std::fs::read_to_string(dir.path().join("a.txt")).unwrap(),
+        "v3"
+    );
+    // The third message has turn id 2 even though history was compacted.
+    let t = b.agent.items.iter().rev().find_map(|i| i.turn()).unwrap();
+    assert_eq!(t, 2);
+    b.agent.rewind(t, true).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(dir.path().join("a.txt")).unwrap(),
+        "v2",
+        "only the last turn is reverted"
+    );
+    // Replay reproduces turn ids for resumed sessions.
+    let rep = b.agent.shared.session().replay().unwrap();
+    assert_eq!(crate::session::next_turn_id(&rep), 3);
+}

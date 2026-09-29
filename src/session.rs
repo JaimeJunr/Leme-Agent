@@ -234,6 +234,24 @@ pub fn replay_file(path: &Path) -> Result<Replayed> {
     Ok(r)
 }
 
+/// First unused turn id after replaying a session.
+pub fn next_turn_id(r: &Replayed) -> usize {
+    let from_ck = r
+        .checkpoints
+        .iter()
+        .map(|(t, _, _)| t + 1)
+        .max()
+        .unwrap_or(0);
+    let from_items = r
+        .items
+        .iter()
+        .filter_map(|i| i.turn())
+        .map(|t| t + 1)
+        .max()
+        .unwrap_or(0);
+    from_ck.max(from_items)
+}
+
 #[derive(Debug, Clone)]
 pub struct SessionSummary {
     pub id: String,

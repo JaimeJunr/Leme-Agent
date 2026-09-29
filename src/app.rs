@@ -214,6 +214,10 @@ pub async fn boot_with(
         .unwrap_or(cfg.model.clone());
     let effort = cfg.effort.clone();
 
+    let next_turn = replay
+        .as_ref()
+        .map(crate::session::next_turn_id)
+        .unwrap_or(0);
     let mut checkpoints = Checkpoints::default();
     let mut todos = vec![];
     let mut usage = Usage::default();
@@ -236,6 +240,7 @@ pub async fn boot_with(
         jobs: Default::default(),
         checkpoints: Mutex::new(checkpoints),
         turn: AtomicUsize::new(0),
+        next_turn: AtomicUsize::new(next_turn),
         modified: Mutex::new(BTreeSet::new()),
         loaded_instructions: Mutex::new(loaded),
         session: RwLock::new(Arc::new(session)),
