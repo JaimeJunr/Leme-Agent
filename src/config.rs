@@ -1,7 +1,7 @@
 //! Layered TOML configuration.
 //!
-//! Precedence (low → high): built-in defaults, `~/.config/harness/config.toml`,
-//! `<project>/.harness/config.toml`, `<project>/.harness/local.toml`
+//! Precedence (low → high): built-in defaults, `~/.config/leme/config.toml`,
+//! `<project>/.leme/config.toml`, `<project>/.leme/local.toml`
 //! (personal, meant to be git-ignored), environment variables, CLI flags.
 
 use anyhow::{Context, Result};
@@ -155,38 +155,38 @@ impl Default for Config {
 }
 
 pub fn config_dir() -> PathBuf {
-    if let Ok(p) = std::env::var("HARNESS_CONFIG_DIR") {
+    if let Ok(p) = std::env::var("LEME_CONFIG_DIR") {
         return PathBuf::from(p);
     }
     dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("harness")
+        .join("leme")
 }
 
 pub fn data_dir() -> PathBuf {
-    if let Ok(p) = std::env::var("HARNESS_DATA_DIR") {
+    if let Ok(p) = std::env::var("LEME_DATA_DIR") {
         return PathBuf::from(p);
     }
     dirs::data_local_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("harness")
+        .join("leme")
 }
 
 pub fn cache_dir() -> PathBuf {
-    if let Ok(p) = std::env::var("HARNESS_CACHE_DIR") {
+    if let Ok(p) = std::env::var("LEME_CACHE_DIR") {
         return PathBuf::from(p);
     }
     dirs::cache_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("harness")
+        .join("leme")
 }
 
-/// Find the project root: nearest ancestor with `.git`, `.harness` or `AGENTS.md`;
+/// Find the project root: nearest ancestor with `.git`, `.leme` or `AGENTS.md`;
 /// falls back to `cwd`.
 pub fn project_root(cwd: &Path) -> PathBuf {
     let mut dir = Some(cwd);
     while let Some(d) = dir {
-        if d.join(".git").exists() || d.join(".harness").is_dir() {
+        if d.join(".git").exists() || d.join(".leme").is_dir() {
             return d.to_path_buf();
         }
         dir = d.parent();
@@ -235,8 +235,8 @@ fn read_toml(path: &Path) -> Result<Option<toml::Value>> {
 pub fn config_layers(root: &Path) -> Vec<PathBuf> {
     vec![
         config_dir().join("config.toml"),
-        root.join(".harness").join("config.toml"),
-        root.join(".harness").join("local.toml"),
+        root.join(".leme").join("config.toml"),
+        root.join(".leme").join("local.toml"),
     ]
 }
 
@@ -255,7 +255,7 @@ impl Config {
     }
 
     fn apply_env(&mut self) {
-        if let Ok(m) = std::env::var("HARNESS_MODEL") {
+        if let Ok(m) = std::env::var("LEME_MODEL") {
             self.model = m;
         }
         if let Ok(u) = std::env::var("OPENROUTER_BASE_URL") {
@@ -325,7 +325,7 @@ impl Config {
                 return Some(k);
             }
         }
-        for var in ["OPENROUTER_API_KEY", "HARNESS_API_KEY"] {
+        for var in ["OPENROUTER_API_KEY", "LEME_API_KEY"] {
             if let Ok(k) = std::env::var(var)
                 && !k.trim().is_empty()
             {
@@ -344,10 +344,10 @@ impl Config {
     }
 }
 
-/// Append a permission rule to `<root>/.harness/local.toml` so that "always
+/// Append a permission rule to `<root>/.leme/local.toml` so that "always
 /// allow" answers persist for the project.
 pub fn persist_allow_rule(root: &Path, rule: &str) -> Result<()> {
-    let dir = root.join(".harness");
+    let dir = root.join(".leme");
     std::fs::create_dir_all(&dir)?;
     let path = dir.join("local.toml");
     let mut v = read_toml(&path)?.unwrap_or(toml::Value::Table(Default::default()));
@@ -373,7 +373,7 @@ pub fn persist_allow_rule(root: &Path, rule: &str) -> Result<()> {
     Ok(())
 }
 
-pub const TEMPLATE: &str = r#"# harness configuration — https://github.com/jaimejunr/harness
+pub const TEMPLATE: &str = r#"# leme configuration — https://github.com/jaimejunr/harness
 # Any OpenRouter model id works: https://openrouter.ai/models
 
 model = "anthropic/claude-sonnet-5.5"

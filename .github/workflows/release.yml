@@ -31,7 +31,7 @@ jobs:
       - name: Package
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../harness-${{ github.ref_name }}-${{ matrix.target }}.tar.gz harness
+          tar czf ../../../leme-${{ github.ref_name }}-${{ matrix.target }}.tar.gz leme
       - uses: softprops/action-gh-release@v2
         with:
-          files: harness-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          files: leme-${{ github.ref_name }}-${{ matrix.target }}.tar.gz

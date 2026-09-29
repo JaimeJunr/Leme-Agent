@@ -147,7 +147,7 @@ impl McpServer {
                 json!({
                     "protocolVersion": PROTOCOL_VERSION,
                     "capabilities": {"roots": {"listChanged": false}},
-                    "clientInfo": {"name": "harness", "version": env!("CARGO_PKG_VERSION")}
+                    "clientInfo": {"name": "leme", "version": env!("CARGO_PKG_VERSION")}
                 }),
                 Duration::from_secs(30),
             )

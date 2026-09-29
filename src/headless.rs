@@ -1,4 +1,4 @@
-//! Non-interactive mode (`harness -p "…"`): for scripts and CI.
+//! Non-interactive mode (`leme -p "…"`): for scripts and CI.
 
 use crate::agent::events::{AgentEvent, StopReason};
 use crate::agent::{Agent, UserInput};

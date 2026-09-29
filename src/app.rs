@@ -299,7 +299,7 @@ pub fn require_api_key(cfg: &Config) -> Result<String> {
     match cfg.resolve_api_key() {
         Some(k) => Ok(k),
         None => bail!(
-            "no OpenRouter API key found.\n  Get one at https://openrouter.ai/keys and either:\n    export OPENROUTER_API_KEY=sk-or-...\n  or run `harness login`, or set `api_key_cmd` in {}",
+            "no OpenRouter API key found.\n  Get one at https://openrouter.ai/keys and either:\n    export OPENROUTER_API_KEY=sk-or-...\n  or run `leme login`, or set `api_key_cmd` in {}",
             crate::config::config_dir().join("config.toml").display()
         ),
     }

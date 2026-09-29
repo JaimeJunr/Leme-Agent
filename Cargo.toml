@@ -1,5 +1,5 @@
 [package]
-name = "harness"
+name = "leme"
 version = "0.1.0"
 edition = "2024"
 description = "A fast, native coding agent for your terminal — any model on OpenRouter."
@@ -9,7 +9,7 @@ keywords = ["ai", "agent", "cli", "openrouter", "llm"]
 categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
-name = "harness"
+name = "leme"
 path = "src/main.rs"
 
 [dependencies]

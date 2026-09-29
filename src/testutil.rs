@@ -10,12 +10,12 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 pub fn env() {
     static DIR: OnceLock<std::path::PathBuf> = OnceLock::new();
     DIR.get_or_init(|| {
-        let d = std::env::temp_dir().join(format!("harness-test-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("leme-test-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
         unsafe {
-            std::env::set_var("HARNESS_DATA_DIR", d.join("data"));
-            std::env::set_var("HARNESS_CACHE_DIR", d.join("cache"));
-            std::env::set_var("HARNESS_CONFIG_DIR", d.join("config"));
+            std::env::set_var("LEME_DATA_DIR", d.join("data"));
+            std::env::set_var("LEME_CACHE_DIR", d.join("cache"));
+            std::env::set_var("LEME_CONFIG_DIR", d.join("config"));
         }
         d
     });

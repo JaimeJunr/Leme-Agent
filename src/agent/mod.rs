@@ -711,14 +711,14 @@ impl Agent {
                 "stopping: `{}` was called {repeats} times with identical arguments and results",
                 call.name
             ));
-            out.content.push_str("\n\n[harness] This exact call has now been repeated 5 times with the same result. The turn was stopped; explain to the user what is blocking you.");
+            out.content.push_str("\n\n[leme] This exact call has now been repeated 5 times with the same result. The turn was stopped; explain to the user what is blocking you.");
             return Some(StopReason::Error(
                 "repeated identical tool calls (loop detected)".into(),
             ));
         }
         if repeats >= 3 {
             out.content.push_str(&format!(
-                "\n\n[harness] You have made this exact `{}` call {repeats} times with identical results. Repeating it will not help — change your approach (re-read the relevant code, check your assumptions, or ask for help).",
+                "\n\n[leme] You have made this exact `{}` call {repeats} times with identical results. Repeating it will not help — change your approach (re-read the relevant code, check your assumptions, or ask for help).",
                 call.name
             ));
         }

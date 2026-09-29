@@ -781,43 +781,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "harness"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64",
- "chrono",
- "clap",
- "crossterm",
- "dirs",
- "futures-util",
- "globset",
- "grep-regex",
- "grep-searcher",
- "hex",
- "htmd",
- "ignore",
- "landlock",
- "libc",
- "parking_lot",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
- "sha2",
- "shlex",
- "similar",
- "tempfile",
- "tokio",
- "tokio-util",
- "toml",
- "unicode-segmentation",
- "unicode-width",
- "uuid",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1217,6 +1180,43 @@ dependencies = [
  "enumflags2",
  "libc",
  "thiserror",
+]
+
+[[package]]
+name = "leme"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64",
+ "chrono",
+ "clap",
+ "crossterm",
+ "dirs",
+ "futures-util",
+ "globset",
+ "grep-regex",
+ "grep-searcher",
+ "hex",
+ "htmd",
+ "ignore",
+ "landlock",
+ "libc",
+ "parking_lot",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "shlex",
+ "similar",
+ "tempfile",
+ "tokio",
+ "tokio-util",
+ "toml",
+ "unicode-segmentation",
+ "unicode-width",
+ "uuid",
 ]
 
 [[package]]

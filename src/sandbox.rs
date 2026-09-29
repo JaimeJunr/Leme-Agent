@@ -1,7 +1,7 @@
 //! OS-level sandbox for shell commands.
 //!
-//! * Linux: Landlock (no root, no containers). The harness re-executes itself
-//!   as `harness __sandbox …` so the restriction is applied in a fresh,
+//! * Linux: Landlock (no root, no containers). The leme re-executes itself
+//!   as `leme __sandbox …` so the restriction is applied in a fresh,
 //!   single-threaded process right before `exec`.
 //! * macOS: Seatbelt via `sandbox-exec`.
 //!
@@ -128,7 +128,7 @@ pub fn wrap(root: &Path, allow_network: bool, script: &str) -> Vec<String> {
     {
         let exe = std::env::current_exe()
             .map(|p| p.display().to_string())
-            .unwrap_or_else(|_| "harness".into());
+            .unwrap_or_else(|_| "leme".into());
         let mut argv = vec![exe, "__sandbox".into()];
         for p in writable_roots(root) {
             argv.push("--write".into());
@@ -143,7 +143,7 @@ pub fn wrap(root: &Path, allow_network: bool, script: &str) -> Vec<String> {
     }
 }
 
-/// Entry point for `harness __sandbox [--probe] [--write DIR]… [--no-net] -- CMD…`.
+/// Entry point for `leme __sandbox [--probe] [--write DIR]… [--no-net] -- CMD…`.
 #[cfg(target_os = "linux")]
 pub fn helper_main(args: &[String]) -> ! {
     use landlock::{
@@ -198,11 +198,11 @@ pub fn helper_main(args: &[String]) -> ! {
     match result {
         Ok(RulesetStatus::FullyEnforced) | Ok(RulesetStatus::PartiallyEnforced) => {}
         Ok(RulesetStatus::NotEnforced) => {
-            eprintln!("harness sandbox: Landlock is not supported by this kernel");
+            eprintln!("leme sandbox: Landlock is not supported by this kernel");
             std::process::exit(if probe { 1 } else { 126 });
         }
         Err(e) => {
-            eprintln!("harness sandbox: {e}");
+            eprintln!("leme sandbox: {e}");
             std::process::exit(126);
         }
     }
@@ -210,16 +210,16 @@ pub fn helper_main(args: &[String]) -> ! {
         std::process::exit(0);
     }
     if cmd.is_empty() {
-        eprintln!("harness sandbox: no command");
+        eprintln!("leme sandbox: no command");
         std::process::exit(2);
     }
     let err = std::process::Command::new(&cmd[0]).args(&cmd[1..]).exec();
-    eprintln!("harness sandbox: exec failed: {err}");
+    eprintln!("leme sandbox: exec failed: {err}");
     std::process::exit(127);
 }
 
 #[cfg(not(target_os = "linux"))]
 pub fn helper_main(_args: &[String]) -> ! {
-    eprintln!("harness sandbox helper is only used on Linux");
+    eprintln!("leme sandbox helper is only used on Linux");
     std::process::exit(1);
 }

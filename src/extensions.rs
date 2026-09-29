@@ -106,7 +106,7 @@ pub struct Extensions {
 /// Search roots, highest priority first.
 fn roots(project: &Path, kind: &str) -> Vec<PathBuf> {
     let mut v = vec![
-        project.join(".harness").join(kind),
+        project.join(".leme").join(kind),
         project.join(".claude").join(kind),
         project.join(".agents").join(kind),
         crate::config::config_dir().join(kind),

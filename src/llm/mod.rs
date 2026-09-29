@@ -171,7 +171,7 @@ impl LlmClient {
             .connect_timeout(Duration::from_secs(20))
             .pool_idle_timeout(Duration::from_secs(90))
             .tcp_keepalive(Duration::from_secs(30))
-            .user_agent(concat!("harness/", env!("CARGO_PKG_VERSION")))
+            .user_agent(concat!("leme/", env!("CARGO_PKG_VERSION")))
             .build()?;
         Ok(Self {
             http,
@@ -190,7 +190,7 @@ impl LlmClient {
             .post(format!("{}{}", self.base_url, path))
             .bearer_auth(&self.api_key)
             .header("HTTP-Referer", "https://github.com/jaimejunr/harness")
-            .header("X-Title", "harness")
+            .header("X-Title", "leme")
     }
 
     pub fn get(&self, path: &str) -> reqwest::RequestBuilder {
@@ -198,7 +198,7 @@ impl LlmClient {
             .get(format!("{}{}", self.base_url, path))
             .bearer_auth(&self.api_key)
             .header("HTTP-Referer", "https://github.com/jaimejunr/harness")
-            .header("X-Title", "harness")
+            .header("X-Title", "leme")
     }
 
     pub fn http(&self) -> &reqwest::Client {

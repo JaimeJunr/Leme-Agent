@@ -15,7 +15,7 @@ impl Tool for AskTool {
     fn description(&self) -> String {
         "Ask the user a question and wait for the answer. Use only when a decision genuinely needs their input \
 (ambiguous requirements, choosing between materially different approaches, missing credentials). Offer \
-short `options` when possible. Do not ask for permission to run tools — the harness handles approvals."
+short `options` when possible. Do not ask for permission to run tools — approvals are handled for you."
             .into()
     }
     fn schema(&self) -> Value {

@@ -101,7 +101,7 @@ pub fn transcript(items: &[Item], budget_chars: usize) -> String {
                 content, synthetic, ..
             } => {
                 if *synthetic {
-                    format!("[harness]: {}", crate::util::ellipsize(content, 4000))
+                    format!("[leme]: {}", crate::util::ellipsize(content, 4000))
                 } else {
                     format!("[user]: {content}")
                 }

@@ -1,4 +1,4 @@
-# harness — agent instructions
+# Leme — agent instructions
 
 Native Rust coding-agent CLI for OpenRouter. Single binary crate (`src/main.rs`), edition 2024.
 

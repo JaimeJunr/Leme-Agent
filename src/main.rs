@@ -1,4 +1,4 @@
-//! harness — a fast, native coding agent for the terminal, powered by any
+//! leme — a fast, native coding agent for the terminal, powered by any
 //! model on OpenRouter.
 
 mod agent;
@@ -30,10 +30,10 @@ use std::io::{IsTerminal, Read, Write};
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "harness",
+    name = "leme",
     version,
     about = "A fast, native coding agent for your terminal — any model on OpenRouter.",
-    after_help = "Examples:\n  harness                                  interactive session\n  harness \"fix the failing test\"           start with a prompt\n  harness -p \"summarize src/\" --output-format json   scripted / CI\n  git diff | harness -p \"review this\"        pipe context in\n  harness -c                               continue the last session\n  harness -m openai/gpt-5.6-sol --mode auto  pick model and mode"
+    after_help = "Examples:\n  leme                                       interactive session\n  leme \"fix the failing test\"                start with a prompt\n  leme -p \"summarize src/\" --output-format json   scripted / CI\n  git diff | leme -p \"review this\"          pipe context in\n  leme -c                                    continue the last session\n  leme -m openai/gpt-5.6-sol --mode auto     pick model and mode"
 )]
 struct Cli {
     /// Initial prompt.
@@ -42,7 +42,7 @@ struct Cli {
     #[arg(short, long)]
     print: bool,
     /// Model id (any OpenRouter model, e.g. anthropic/claude-sonnet-5.5).
-    #[arg(short, long, env = "HARNESS_MODEL")]
+    #[arg(short, long, env = "LEME_MODEL")]
     model: Option<String>,
     /// Reasoning effort: none|minimal|low|medium|high|xhigh|max.
     #[arg(short, long)]
@@ -429,7 +429,7 @@ fn config_cmd(action: Option<&ConfigCmd>, cli: &Cli) -> Result<i32> {
     match action {
         Some(ConfigCmd::Init { project }) => {
             let path = if *project {
-                root.join(".harness").join("config.toml")
+                root.join(".leme").join("config.toml")
             } else {
                 config::config_dir().join("config.toml")
             };

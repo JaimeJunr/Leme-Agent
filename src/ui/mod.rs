@@ -525,7 +525,7 @@ impl App {
                     ));
                     if self.shared.cfg().notify {
                         // Bell + OSC 9 desktop notification (iTerm2, WezTerm, kitty, Windows Terminal…)
-                        self.screen.raw("\x07\x1b]9;harness: turn finished\x07");
+                        self.screen.raw("\x07\x1b]9;leme: turn finished\x07");
                     }
                 }
             }
@@ -1452,29 +1452,28 @@ impl App {
                 mut sel,
                 feedback,
             } => {
-                let choose =
-                    |i: usize, req: ApprovalRequest, app: &mut App| -> Option<ApprovalRequest> {
-                        match i {
-                            0 => {
-                                let _ = req.reply.send(Decision::Allow);
-                                None
-                            }
-                            1 => {
-                                let d = if req.rule == "edit" {
-                                    Decision::AllowSession("edit".into())
-                                } else {
-                                    app.info(&format!(
-                                        "saved rule `{}` to .harness/local.toml",
-                                        req.rule
-                                    ));
-                                    Decision::AllowAlways(req.rule.clone())
-                                };
-                                let _ = req.reply.send(d);
-                                None
-                            }
-                            _ => Some(req),
+                let choose = |i: usize,
+                              req: ApprovalRequest,
+                              app: &mut App|
+                 -> Option<ApprovalRequest> {
+                    match i {
+                        0 => {
+                            let _ = req.reply.send(Decision::Allow);
+                            None
                         }
-                    };
+                        1 => {
+                            let d = if req.rule == "edit" {
+                                Decision::AllowSession("edit".into())
+                            } else {
+                                app.info(&format!("saved rule `{}` to .leme/local.toml", req.rule));
+                                Decision::AllowAlways(req.rule.clone())
+                            };
+                            let _ = req.reply.send(d);
+                            None
+                        }
+                        _ => Some(req),
+                    }
+                };
                 match k.code {
                     KeyCode::Char('y') | KeyCode::Char('1') => {
                         choose(0, req, self);
@@ -1831,7 +1830,7 @@ impl App {
         }
         if let Some(t) = self.shared.title.lock().clone() {
             self.screen.raw(&format!(
-                "\x1b]0;harness · {}\x07",
+                "\x1b]0;leme · {}\x07",
                 crate::util::ellipsize(&t, 60)
             ));
         }
@@ -1840,7 +1839,7 @@ impl App {
 
     pub fn print_banner(&mut self, warnings: &[String], resumed: bool) {
         let root = self.shared.root.display().to_string();
-        let mut l = Line::styled("◆ harness", Style::fg(theme::ACCENT).bold());
+        let mut l = Line::styled("◆ leme", Style::fg(theme::ACCENT).bold());
         l.push(
             format!(" v{}", env!("CARGO_PKG_VERSION")),
             Style::fg(theme::MUTED),
@@ -1926,11 +1925,11 @@ impl App {
         let mut tick = tokio::time::interval(Duration::from_millis(80));
         if let Some(t) = self.shared.title.lock().clone() {
             self.screen.raw(&format!(
-                "\x1b]0;harness · {}\x07",
+                "\x1b]0;leme · {}\x07",
                 crate::util::ellipsize(&t, 60)
             ));
         } else {
-            self.screen.raw("\x1b]0;harness\x07");
+            self.screen.raw("\x1b]0;leme\x07");
         }
         if let Some(text) = initial
             && !text.trim().is_empty()
@@ -2021,7 +2020,7 @@ impl App {
         self.screen.leave();
         drop(self);
         println!(
-            "\x1b[2m{} · resume with: harness -r {}\x1b[0m",
+            "\x1b[2m{} · resume with: leme -r {}\x1b[0m",
             if usage.cost > 0.0 {
                 format!("session cost {}", fmt_cost(usage.cost))
             } else {

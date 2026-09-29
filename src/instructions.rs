@@ -1,10 +1,10 @@
-//! Project instruction files (AGENTS.md / HARNESS.md / CLAUDE.md), global and
+//! Project instruction files (AGENTS.md / LEME.md / CLAUDE.md), global and
 //! per-directory, including lazily discovered nested files.
 
 use crate::agent::shared::Shared;
 use std::path::{Path, PathBuf};
 
-pub const NAMES: [&str; 3] = ["AGENTS.md", "HARNESS.md", "CLAUDE.md"];
+pub const NAMES: [&str; 3] = ["AGENTS.md", "LEME.md", "CLAUDE.md"];
 const LOCAL_NAMES: [&str; 2] = ["AGENTS.local.md", "CLAUDE.local.md"];
 const MAX_FILE_BYTES: usize = 64 * 1024;
 

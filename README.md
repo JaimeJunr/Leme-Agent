@@ -1,14 +1,14 @@
-# harness
+# Leme
 
 **A fast, native coding agent for your terminal — powered by any model on OpenRouter.**
 
-`harness` is a single ~13 MB Rust binary (no Node, no Python) that starts in ~3 ms and runs in ~10 MB of RAM.
+**Leme** (Portuguese for *helm*) is a single ~13 MB Rust binary (no Node, no Python) that starts in ~3 ms and runs in ~10 MB of RAM.
 It reads, searches and edits your code, runs commands, verifies its work, and keeps going until the task is done —
 with Claude, GPT, Gemini, DeepSeek, Grok, Qwen, Kimi, GLM or any of the 400+ models on [OpenRouter](https://openrouter.ai/models),
 all with one API key.
 
 ```
-◆ harness v0.1.0  anthropic/claude-sonnet-5.5
+◆ leme v0.1.0  anthropic/claude-sonnet-5.5
   ~/code/api · AGENTS.md · 12 MCP tools
 
 › add rate limiting to the /login endpoint
@@ -28,9 +28,9 @@ all with one API key.
   ⏵⏵ accept edits · claude-sonnet-5.5 · ctx 9% · $0.041 · cache 91%
 ```
 
-## Why harness
+## Why Leme
 
-Most coding agents are either locked to one vendor, or model-agnostic but generic. `harness` is built *for* OpenRouter
+Most coding agents are either locked to one vendor, or model-agnostic but generic. `leme` is built *for* OpenRouter
 and squeezes the most out of it, while matching the workflow features of the best agents:
 
 **Native and fast**
@@ -74,7 +74,7 @@ and squeezes the most out of it, while matching the workflow features of the bes
   `Esc Esc` or `/rewind` restores files *and* conversation to any earlier message; `/undo` reverts the last turn.
 
 **Extensible and compatible**
-- `AGENTS.md` / `CLAUDE.md` / `HARNESS.md` (global, project, nested; `@imports`), skills (`SKILL.md`), custom slash commands,
+- `AGENTS.md` / `CLAUDE.md` / `LEME.md` (global, project, nested; `@imports`), skills (`SKILL.md`), custom slash commands,
   subagent definitions, hooks, MCP servers (stdio + streamable HTTP) — reading the same `.claude/` layout and `.mcp.json` you
   may already have.
 - Headless mode for scripts/CI with `text`, `json` and `stream-json` output, exit codes, stdin piping.
@@ -87,7 +87,7 @@ From source (Rust ≥ 1.85):
 cargo install --git https://github.com/jaimejunr/harness
 # or
 git clone https://github.com/jaimejunr/harness && cd harness && cargo build --release
-./target/release/harness --version
+./target/release/leme --version
 ```
 
 The release workflow (`.github/workflows/release.yml`) builds Linux and macOS binaries for every `v*` tag.
@@ -95,14 +95,14 @@ The release workflow (`.github/workflows/release.yml`) builds Linux and macOS bi
 ## Quick start
 
 ```sh
-export OPENROUTER_API_KEY=sk-or-...        # https://openrouter.ai/keys  (or: harness login)
+export OPENROUTER_API_KEY=sk-or-...        # https://openrouter.ai/keys  (or: leme login)
 cd your-project
-harness                                     # interactive
-harness "why does the login test fail?"     # start with a prompt
-harness -c                                  # continue the last session
+leme                                     # interactive
+leme "why does the login test fail?"     # start with a prompt
+leme -c                                  # continue the last session
 ```
 
-On first run without a key, `harness` asks for it and stores it in `~/.config/harness/config.toml` (mode 600).
+On first run without a key, `leme` asks for it and stores it in `~/.config/leme/config.toml` (mode 600).
 Run `/init` in a new project to have the agent write an `AGENTS.md` describing how to build, test and work in it.
 
 ### In the prompt
@@ -147,9 +147,9 @@ into a placeholder; pasting an image path attaches the image.
 
 ## Configuration
 
-Layers, lowest to highest priority: built-in defaults → `~/.config/harness/config.toml` → `<project>/.harness/config.toml`
-→ `<project>/.harness/local.toml` (personal; "always allow" answers are saved here) → environment → CLI flags.
-`harness config init` writes a commented template.
+Layers, lowest to highest priority: built-in defaults → `~/.config/leme/config.toml` → `<project>/.leme/config.toml`
+→ `<project>/.leme/local.toml` (personal; "always allow" answers are saved here) → environment → CLI flags.
+`leme config init` writes a commented template.
 
 ```toml
 model        = "anthropic/claude-sonnet-5.5"
@@ -188,18 +188,18 @@ back to work with your message); stdout of `session_start` / `user_prompt` hooks
 
 | What | Where (first match wins) |
 |---|---|
-| Instructions | `~/.config/harness/AGENTS.md`, then `AGENTS.md` / `HARNESS.md` / `CLAUDE.md` (+ `*.local.md`) from the project root down to the cwd; nested ones load when the agent touches that directory |
-| Skills | `.harness/skills/<name>/SKILL.md`, `.claude/skills/…`, `.agents/skills/…`, `~/.config/harness/skills/…`, `~/.claude/skills/…` |
-| Commands | `.harness/commands/*.md` (`$ARGUMENTS`, `$1…$9`, `` !`shell` `` expansion, `model:` frontmatter), `.claude/commands/…` |
-| Subagents | `.harness/agents/*.md` with `name`, `description`, `tools`, `model` (`small`/`main`/`oracle`/any id) frontmatter, `.claude/agents/…` |
+| Instructions | `~/.config/leme/AGENTS.md`, then `AGENTS.md` / `LEME.md` / `CLAUDE.md` (+ `*.local.md`) from the project root down to the cwd; nested ones load when the agent touches that directory |
+| Skills | `.leme/skills/<name>/SKILL.md`, `.claude/skills/…`, `.agents/skills/…`, `~/.config/leme/skills/…`, `~/.claude/skills/…` |
+| Commands | `.leme/commands/*.md` (`$ARGUMENTS`, `$1…$9`, `` !`shell` `` expansion, `model:` frontmatter), `.claude/commands/…` |
+| Subagents | `.leme/agents/*.md` with `name`, `description`, `tools`, `model` (`small`/`main`/`oracle`/any id) frontmatter, `.claude/agents/…` |
 | MCP | `[mcp.*]` in config, or `.mcp.json` in the project root |
 
 ## Headless / CI
 
 ```sh
-harness -p "fix the lint errors" --mode auto --verify "npm run lint" --max-cost 1
-git diff | harness -p "review this diff" --output-format json | jq -r .result
-harness -p "…" --output-format stream-json      # one JSON event per line (text, tool_start, tool_end + diffs, usage, …)
+leme -p "fix the lint errors" --mode auto --verify "npm run lint" --max-cost 1
+git diff | leme -p "review this diff" --output-format json | jq -r .result
+leme -p "…" --output-format stream-json      # one JSON event per line (text, tool_start, tool_end + diffs, usage, …)
 ```
 
 Exit codes: `0` done, `1` error, `2` budget/step limit, `130` interrupted. Without a TTY, permission prompts become
@@ -207,8 +207,8 @@ denials the model is told about — grant what a job needs with `--mode`, `--all
 
 ## Sessions
 
-Sessions are append-only JSONL files under `~/.local/share/harness/sessions/<project>/` with file checkpoints stored
-content-addressed next to them. `harness -c` continues the latest, `harness -r` opens a picker, `harness sessions` lists them,
+Sessions are append-only JSONL files under `~/.local/share/leme/sessions/<project>/` with file checkpoints stored
+content-addressed next to them. `leme -c` continues the latest, `leme -r` opens a picker, `leme sessions` lists them,
 `/fork` branches a conversation, `/export` writes Markdown.
 
 ## Architecture

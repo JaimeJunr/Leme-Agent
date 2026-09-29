@@ -74,7 +74,7 @@ fn shell_env(cmd: &mut Command) {
         .env("TERM", "dumb")
         .env("NO_COLOR", "1")
         .env("DEBIAN_FRONTEND", "noninteractive")
-        .env("HARNESS", "1");
+        .env("LEME", "1");
 }
 
 pub fn kill_group(pid: u32) {
@@ -125,9 +125,9 @@ pub async fn run_command(
     command: &str,
     timeout: Duration,
 ) -> std::io::Result<CommandResult> {
-    let cwd_file = std::env::temp_dir().join(format!("harness-cwd-{}", crate::util::short_id()));
+    let cwd_file = std::env::temp_dir().join(format!("leme-cwd-{}", crate::util::short_id()));
     let script = format!(
-        "{{\n{command}\n}} 2>&1\n__harness_ec=$?\npwd -P > '{}' 2>/dev/null\nexit $__harness_ec",
+        "{{\n{command}\n}} 2>&1\n__leme_ec=$?\npwd -P > '{}' 2>/dev/null\nexit $__leme_ec",
         cwd_file.display()
     );
     let mut cmd = build_command(ctx, &script);
@@ -332,7 +332,7 @@ fn format_result(ctx: &ToolCtx, res: &CommandResult, timeout: Duration) -> ToolO
             }
         }
     }
-    if res.exit_code == Some(126) && res.output.contains("harness sandbox") {
+    if res.exit_code == Some(126) && res.output.contains("leme sandbox") {
         content.push_str("\n[the sandbox blocked this command]");
     }
     if let Some(cwd) = &res.new_cwd {

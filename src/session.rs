@@ -326,10 +326,7 @@ pub fn to_markdown(items: &[Item], title: &str) -> String {
                 content, synthetic, ..
             } => {
                 if *synthetic {
-                    out.push_str(&format!(
-                        "> _harness:_ {}\n\n",
-                        content.replace('\n', "\n> ")
-                    ));
+                    out.push_str(&format!("> _leme:_ {}\n\n", content.replace('\n', "\n> ")));
                 } else {
                     out.push_str(&format!("## User\n\n{content}\n\n"));
                 }

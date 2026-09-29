@@ -53,7 +53,7 @@ pub const BUILTIN: &[(&str, &str)] = &[
     ("status", "Session, model, key credits and sandbox status"),
     ("config", "Show configuration file locations"),
     ("verbose", "Toggle verbose output (ctrl+o)"),
-    ("quit", "Exit harness"),
+    ("quit", "Exit leme"),
 ];
 
 const RUNNING_OK: &[&str] = &[
@@ -134,7 +134,7 @@ pub async fn run(app: &mut App, name: &str, args: &str) {
         "mcp" => mcp(app),
         "skills" => {
             let s: Vec<String> = app.shared.ext.skills.iter().map(|s| format!("{} — {}", s.name, crate::util::ellipsize(&s.description, 100))).collect();
-            app.info(&if s.is_empty() { "no skills (add them in .harness/skills/<name>/SKILL.md)".into() } else { s.join("\n") });
+            app.info(&if s.is_empty() { "no skills (add them in .leme/skills/<name>/SKILL.md)".into() } else { s.join("\n") });
         }
         "agents" => {
             let s: Vec<String> = app
@@ -158,7 +158,7 @@ pub async fn run(app: &mut App, name: &str, args: &str) {
                 s.push_str(&format!("  {} {}\n", if p.exists() { "●" } else { "○" }, p.display()));
             }
             s.push_str(&format!("sessions: {}\n", crate::session::sessions_dir(&root).display()));
-            s.push_str("run `harness config init` to create a commented template");
+            s.push_str("run `leme config init` to create a commented template");
             app.info(&s);
         }
         "verbose" => {
@@ -678,10 +678,10 @@ fn export(app: &mut App, args: &str) {
         .title
         .lock()
         .clone()
-        .unwrap_or_else(|| "harness session".into());
+        .unwrap_or_else(|| "leme session".into());
     let md = crate::session::to_markdown(&agent.items, &title);
     let path = if args.is_empty() {
-        format!("harness-{}.md", app.shared.session().id)
+        format!("leme-{}.md", app.shared.session().id)
     } else {
         args.to_string()
     };
@@ -718,7 +718,7 @@ fn mcp(app: &mut App) {
     let cfg = app.shared.cfg();
     if cfg.mcp.is_empty() {
         app.info(
-            "no MCP servers configured (add [mcp.<name>] to .harness/config.toml or a .mcp.json)",
+            "no MCP servers configured (add [mcp.<name>] to .leme/config.toml or a .mcp.json)",
         );
         return;
     }
@@ -750,7 +750,7 @@ fn mcp(app: &mut App) {
 async fn status(app: &mut App) {
     let cfg = app.shared.cfg();
     let mut s = format!(
-        "harness v{}\n  session {}\n  project {}\n  model {} · small {} · oracle {}\n  mode {} · sandbox {}\n  instructions: {}",
+        "leme v{}\n  session {}\n  project {}\n  model {} · small {} · oracle {}\n  mode {} · sandbox {}\n  instructions: {}",
         env!("CARGO_PKG_VERSION"),
         app.shared.session().id,
         app.shared.root.display(),
