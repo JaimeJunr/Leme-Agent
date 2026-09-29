@@ -148,13 +148,13 @@ pub async fn boot_with(
             }
         ));
     }
-    if let Some(info) = catalog.get(&cfg.model) {
-        if !info.supports_tools {
-            warnings.push(format!(
-                "model `{}` does not advertise tool calling; the agent may not work",
-                cfg.model
-            ));
-        }
+    if let Some(info) = catalog.get(&cfg.model)
+        && !info.supports_tools
+    {
+        warnings.push(format!(
+            "model `{}` does not advertise tool calling; the agent may not work",
+            cfg.model
+        ));
     }
     let mode = Mode::parse(&cfg.mode).unwrap_or(Mode::Default);
     let ext = Extensions::load(&root);

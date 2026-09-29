@@ -60,6 +60,8 @@ pub enum AgentEvent {
     Text(String),
     /// The assistant message finished streaming.
     AssistantEnd,
+    /// The model started streaming a call to this tool (arguments pending).
+    ToolPreparing(String),
     ToolStart {
         id: String,
         name: String,
@@ -151,10 +153,6 @@ impl EventSink {
             tx: self.tx.clone(),
             wrap: Some((task_id.to_string(), label.to_string())),
         }
-    }
-
-    pub fn is_sub(&self) -> bool {
-        self.wrap.is_some()
     }
 
     pub fn notice(&self, s: impl Into<String>) {

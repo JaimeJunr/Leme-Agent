@@ -17,6 +17,7 @@ pub struct Screen {
     pub width: u16,
     pub height: u16,
     pub active: bool,
+    kbd_enhanced: bool,
 }
 
 impl Screen {
@@ -29,13 +30,18 @@ impl Screen {
             width: w.max(20),
             height: h.max(5),
             active: false,
+            kbd_enhanced: false,
         })
     }
 
     pub fn enter(&mut self) -> std::io::Result<()> {
         terminal::enable_raw_mode()?;
         queue!(self.out, crossterm::event::EnableBracketedPaste)?;
-        if terminal::supports_keyboard_enhancement().unwrap_or(false) {
+        // Only query terminals known to answer quickly; the query blocks
+        // for up to 2s on terminals that ignore it.
+        self.kbd_enhanced = keyboard_protocol_likely()
+            && terminal::supports_keyboard_enhancement().unwrap_or(false);
+        if self.kbd_enhanced {
             let _ = queue!(
                 self.out,
                 crossterm::event::PushKeyboardEnhancementFlags(
@@ -53,7 +59,7 @@ impl Screen {
             return;
         }
         let _ = self.clear_live();
-        if terminal::supports_keyboard_enhancement().unwrap_or(false) {
+        if self.kbd_enhanced {
             let _ = queue!(self.out, crossterm::event::PopKeyboardEnhancementFlags);
         }
         let _ = queue!(
@@ -143,6 +149,32 @@ impl Screen {
         let _ = self.out.write_all(s.as_bytes());
         let _ = self.out.flush();
     }
+}
+
+/// Terminals that implement the kitty keyboard protocol (needed for
+/// Shift+Enter). Others still get Alt+Enter / Ctrl+J / trailing `\`.
+fn keyboard_protocol_likely() -> bool {
+    let term = std::env::var("TERM").unwrap_or_default();
+    let prog = std::env::var("TERM_PROGRAM")
+        .unwrap_or_default()
+        .to_lowercase();
+    std::env::var("KITTY_WINDOW_ID").is_ok()
+        || std::env::var("WEZTERM_EXECUTABLE").is_ok()
+        || std::env::var("GHOSTTY_RESOURCES_DIR").is_ok()
+        || term.contains("kitty")
+        || term.contains("ghostty")
+        || term.contains("foot")
+        || term.contains("alacritty")
+        || [
+            "wezterm",
+            "ghostty",
+            "iterm.app",
+            "vscode",
+            "warpterminal",
+            "rio",
+        ]
+        .iter()
+        .any(|p| prog.contains(p))
 }
 
 impl Drop for Screen {

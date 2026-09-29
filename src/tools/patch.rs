@@ -93,11 +93,11 @@ pub fn parse(patch: &str) -> Result<Vec<Op>, String> {
             let path = p.trim().to_string();
             i += 1;
             let mut move_to = None;
-            if i < body.len() {
-                if let Some(m) = body[i].strip_prefix("*** Move to:") {
-                    move_to = Some(m.trim().to_string());
-                    i += 1;
-                }
+            if i < body.len()
+                && let Some(m) = body[i].strip_prefix("*** Move to:")
+            {
+                move_to = Some(m.trim().to_string());
+                i += 1;
             }
             let mut hunks: Vec<Hunk> = vec![];
             let mut cur: Option<Hunk> = None;
@@ -114,10 +114,10 @@ pub fn parse(patch: &str) -> Result<Vec<Op>, String> {
                     break;
                 }
                 if let Some(h) = l.strip_prefix("@@") {
-                    if let Some(c) = cur.take() {
-                        if !c.old.is_empty() || !c.new.is_empty() {
-                            hunks.push(c);
-                        }
+                    if let Some(c) = cur.take()
+                        && (!c.old.is_empty() || !c.new.is_empty())
+                    {
+                        hunks.push(c);
                     }
                     let h = h.trim().trim_end_matches("@@").trim();
                     cur = Some(Hunk {
@@ -143,10 +143,10 @@ pub fn parse(patch: &str) -> Result<Vec<Op>, String> {
                 }
                 i += 1;
             }
-            if let Some(c) = cur.take() {
-                if !c.old.is_empty() || !c.new.is_empty() {
-                    hunks.push(c);
-                }
+            if let Some(c) = cur.take()
+                && (!c.old.is_empty() || !c.new.is_empty())
+            {
+                hunks.push(c);
             }
             if hunks.is_empty() && move_to.is_none() {
                 return Err(format!("Update File {path}: no hunks"));

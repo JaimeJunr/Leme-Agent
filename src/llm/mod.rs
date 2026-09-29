@@ -63,9 +63,9 @@ pub enum StreamEvent {
     Text(String),
     Reasoning(String),
     /// A tool call started streaming (index, name).
-    ToolCallStart(usize, String),
+    ToolCallStart(#[allow(dead_code)] usize, String),
     /// The stream failed mid-way and is being retried from scratch.
-    Restart(String),
+    Restart,
     /// Waiting before a retry (message).
     Retrying(String),
 }
@@ -230,7 +230,7 @@ impl LlmClient {
                     }
                     let backoff = wait_hint.unwrap_or_else(|| backoff_delay(attempt));
                     if partial {
-                        on_event(StreamEvent::Restart(short_err(&e)));
+                        on_event(StreamEvent::Restart);
                     }
                     on_event(StreamEvent::Retrying(format!(
                         "{} — retrying in {:.0}s (attempt {}/{})",

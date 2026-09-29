@@ -13,7 +13,7 @@ pub mod task;
 pub mod todo;
 pub mod web;
 
-use crate::agent::events::{AgentEvent, EventSink};
+use crate::agent::events::EventSink;
 use crate::agent::shared::Shared;
 use crate::conversation::Image;
 use async_trait::async_trait;
@@ -57,7 +57,6 @@ pub struct ToolOutput {
 #[derive(Debug, Clone)]
 pub enum Display {
     Diff { path: String, diff: String },
-    Text(String),
     Todos(Vec<todo::TodoItem>),
 }
 
@@ -99,12 +98,6 @@ pub struct ToolCtx {
 }
 
 impl ToolCtx {
-    pub fn progress(&self, line: impl Into<String>) {
-        self.events.send(AgentEvent::ToolProgress {
-            id: self.call_id.clone(),
-            line: line.into(),
-        });
-    }
     pub fn root(&self) -> &std::path::Path {
         &self.shared.root
     }

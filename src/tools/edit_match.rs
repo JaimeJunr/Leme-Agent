@@ -287,10 +287,10 @@ pub fn find(content: &str, old: &str, new: &str, replace_all: bool) -> Result<Fo
     }
     if old.contains('\\') {
         let u = unescape(old);
-        if u != old {
-            if let Some(r) = pick(Strategy::Unescaped, exact_all(content, &u), unescape(new)) {
-                return r;
-            }
+        if u != old
+            && let Some(r) = pick(Strategy::Unescaped, exact_all(content, &u), unescape(new))
+        {
+            return r;
         }
     }
     Err(MatchError::NotFound {

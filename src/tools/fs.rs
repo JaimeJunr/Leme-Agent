@@ -497,10 +497,10 @@ You must `read` an existing file before overwriting it."
             String::new()
         };
         ctx.shared.checkpoint(&path);
-        if let Some(dir) = path.parent() {
-            if let Err(e) = std::fs::create_dir_all(dir) {
-                return ToolOutput::err(format!("cannot create {}: {e}", dir.display()));
-            }
+        if let Some(dir) = path.parent()
+            && let Err(e) = std::fs::create_dir_all(dir)
+        {
+            return ToolOutput::err(format!("cannot create {}: {e}", dir.display()));
         }
         if let Err(e) = std::fs::write(&path, &content) {
             return ToolOutput::err(format!("cannot write {}: {e}", path.display()));

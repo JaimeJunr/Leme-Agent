@@ -23,12 +23,6 @@ impl Style {
             ..Default::default()
         }
     }
-    pub fn dim() -> Style {
-        Style {
-            dim: true,
-            ..Default::default()
-        }
-    }
     pub fn bold(mut self) -> Style {
         self.bold = true;
         self
@@ -49,14 +43,6 @@ impl Style {
         self.fg = Some(c);
         self
     }
-    pub fn with_bg(mut self, c: Color) -> Style {
-        self.bg = Some(c);
-        self
-    }
-    pub fn reversed(mut self) -> Style {
-        self.reverse = true;
-        self
-    }
 }
 
 pub mod theme {
@@ -68,7 +54,6 @@ pub mod theme {
     pub const MUTED: Color = Color::DarkGrey;
     pub const CODE: Color = Color::Yellow;
     pub const HEADING: Color = Color::Magenta;
-    pub const USER: Color = Color::Blue;
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -107,11 +92,11 @@ impl Line {
         if text.is_empty() {
             return self;
         }
-        if let Some(last) = self.spans.last_mut() {
-            if last.style == style {
-                last.text.push_str(&text);
-                return self;
-            }
+        if let Some(last) = self.spans.last_mut()
+            && last.style == style
+        {
+            last.text.push_str(&text);
+            return self;
         }
         self.spans.push(Span { text, style });
         self

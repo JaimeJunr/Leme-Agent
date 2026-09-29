@@ -604,17 +604,16 @@ async fn cost(app: &mut App) {
         app.shared.client.key_info(),
     )
     .await
+        && let Ok(k) = k
     {
-        if let Ok(k) = k {
-            let used = k.get("usage").and_then(|v| v.as_f64()).unwrap_or(0.0);
-            match k.get("limit").and_then(|v| v.as_f64()) {
-                Some(limit) => s.push_str(&format!(
-                    "\n  key: {} used of {} limit",
-                    fmt_cost(used),
-                    fmt_cost(limit)
-                )),
-                None => s.push_str(&format!("\n  key: {} used (no limit)", fmt_cost(used))),
-            }
+        let used = k.get("usage").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        match k.get("limit").and_then(|v| v.as_f64()) {
+            Some(limit) => s.push_str(&format!(
+                "\n  key: {} used of {} limit",
+                fmt_cost(used),
+                fmt_cost(limit)
+            )),
+            None => s.push_str(&format!("\n  key: {} used (no limit)", fmt_cost(used))),
         }
     }
     app.info(&s);
@@ -803,12 +802,12 @@ async fn custom(app: &mut App, name: &str, args: &str) {
     let body = crate::extensions::expand_command(&c.body, args, &cwd).await;
     if let Some(m) = &c.model {
         let model = crate::tools::task::resolve_model(Some(m), &app.model, &app.shared.cfg());
-        if let Some(a) = app.agent_mut() {
-            if a.model != model {
-                a.model = model.clone();
-                a.invalidate_system_prompt();
-                app.model = model;
-            }
+        if let Some(a) = app.agent_mut()
+            && a.model != model
+        {
+            a.model = model.clone();
+            a.invalidate_system_prompt();
+            app.model = model;
         }
     }
     app.send(body);

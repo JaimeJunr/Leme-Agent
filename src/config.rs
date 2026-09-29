@@ -34,7 +34,8 @@ pub struct Config {
     pub api_key_cmd: Option<String>,
     pub base_url: String,
     pub max_output_tokens: u32,
-    /// Hard cap for the context window we let a session use (0 = model's).
+    /// Cap on the context window a session uses (0 = the model's full window).
+    /// Long contexts cost more per step and degrade quality; 400k is a good default.
     pub context_limit: u64,
     /// Auto-compact when the context reaches this fraction of the window.
     pub compact_threshold: f64,
@@ -126,7 +127,7 @@ impl Default for Config {
             api_key_cmd: None,
             base_url: DEFAULT_BASE_URL.into(),
             max_output_tokens: 32_000,
-            context_limit: 0,
+            context_limit: 400_000,
             compact_threshold: 0.8,
             temperature: None,
             show_reasoning: true,
@@ -278,12 +279,14 @@ impl Config {
             if self.mcp.contains_key(name) {
                 continue;
             }
-            let mut c = McpServerConfig::default();
-            c.command = spec
-                .get("command")
-                .and_then(|x| x.as_str())
-                .map(String::from);
-            c.url = spec.get("url").and_then(|x| x.as_str()).map(String::from);
+            let mut c = McpServerConfig {
+                command: spec
+                    .get("command")
+                    .and_then(|x| x.as_str())
+                    .map(String::from),
+                url: spec.get("url").and_then(|x| x.as_str()).map(String::from),
+                ..Default::default()
+            };
             if let Some(args) = spec.get("args").and_then(|a| a.as_array()) {
                 c.args = args
                     .iter()
@@ -309,24 +312,24 @@ impl Config {
 
     /// Resolve the API key: config → `api_key_cmd` → env.
     pub fn resolve_api_key(&self) -> Option<String> {
-        if let Some(k) = &self.api_key {
-            if !k.trim().is_empty() {
-                return Some(k.trim().to_string());
-            }
+        if let Some(k) = &self.api_key
+            && !k.trim().is_empty()
+        {
+            return Some(k.trim().to_string());
         }
-        if let Some(cmd) = &self.api_key_cmd {
-            if let Ok(out) = std::process::Command::new("sh").arg("-c").arg(cmd).output() {
-                let k = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                if !k.is_empty() {
-                    return Some(k);
-                }
+        if let Some(cmd) = &self.api_key_cmd
+            && let Ok(out) = std::process::Command::new("sh").arg("-c").arg(cmd).output()
+        {
+            let k = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !k.is_empty() {
+                return Some(k);
             }
         }
         for var in ["OPENROUTER_API_KEY", "HARNESS_API_KEY"] {
-            if let Ok(k) = std::env::var(var) {
-                if !k.trim().is_empty() {
-                    return Some(k.trim().to_string());
-                }
+            if let Ok(k) = std::env::var(var)
+                && !k.trim().is_empty()
+            {
+                return Some(k.trim().to_string());
             }
         }
         None
@@ -356,10 +359,10 @@ pub fn persist_allow_rule(root: &Path, rule: &str) -> Result<()> {
     let allow = perms
         .entry("allow")
         .or_insert_with(|| toml::Value::Array(vec![]));
-    if let toml::Value::Array(a) = allow {
-        if !a.iter().any(|x| x.as_str() == Some(rule)) {
-            a.push(toml::Value::String(rule.to_string()));
-        }
+    if let toml::Value::Array(a) = allow
+        && !a.iter().any(|x| x.as_str() == Some(rule))
+    {
+        a.push(toml::Value::String(rule.to_string()));
     }
     std::fs::write(&path, toml::to_string_pretty(&v)?)?;
     // Keep personal settings out of git by default.
@@ -381,6 +384,7 @@ oracle_model = "openai/gpt-5.6-sol"           # `consult` tool: second opinion
 # api_key_cmd = "pass show openrouter"         # or set OPENROUTER_API_KEY
 # verify = ["cargo check --quiet"]             # run after edits; failures are fed back
 # max_cost = 5.0                               # per-session budget in USD
+# context_limit = 400000                       # cap the usable window (0 = model's full window)
 # fallback_models = ["openai/gpt-5.6-terra"]
 
 # [provider]                                   # OpenRouter provider routing

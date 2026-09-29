@@ -130,37 +130,37 @@ whole page. Use for documentation, issues, API references. Read-only."
             Err(e) => return ToolOutput::err(e),
         };
         let chars = text.chars().count();
-        if let Some(prompt) = arg_opt_str(&args, "prompt") {
-            if chars > 6000 {
-                let cfg = ctx.shared.cfg();
-                let page = crate::util::truncate_bytes(&text, 400_000);
-                let req = ChatRequest {
-                    model: cfg.small_model.clone(),
-                    messages: vec![
-                        json!({"role": "system", "content": "You extract information from web pages. Answer only from the page content. Quote code, commands, versions and API signatures exactly. Be concise but complete. If the page does not contain the answer, say so."}),
-                        json!({"role": "user", "content": format!("Page: {final_url}\n\n<page>\n{page}\n</page>\n\nTask: {prompt}")}),
-                    ],
-                    max_tokens: Some(4000),
-                    ..Default::default()
-                };
-                match ctx.shared.client.complete(&req, &ctx.cancel).await {
-                    Ok(c) => {
-                        ctx.events.send(AgentEvent::Notice(format!(
-                            "web_fetch digest via {} ({})",
-                            cfg.small_model,
-                            crate::util::fmt_cost(c.usage.cost)
-                        )));
-                        return ToolOutput::ok(format!(
-                            "Answer extracted from {final_url} ({chars} chars) for: {prompt}\n\n{}",
-                            c.text
-                        ))
-                        .with_summary(format!("{chars} chars → digest"));
-                    }
-                    Err(e) => {
-                        ctx.events.send(AgentEvent::Warning(format!(
-                            "digest failed ({e}); returning raw page"
-                        )));
-                    }
+        if let Some(prompt) = arg_opt_str(&args, "prompt")
+            && chars > 6000
+        {
+            let cfg = ctx.shared.cfg();
+            let page = crate::util::truncate_bytes(&text, 400_000);
+            let req = ChatRequest {
+                model: cfg.small_model.clone(),
+                messages: vec![
+                    json!({"role": "system", "content": "You extract information from web pages. Answer only from the page content. Quote code, commands, versions and API signatures exactly. Be concise but complete. If the page does not contain the answer, say so."}),
+                    json!({"role": "user", "content": format!("Page: {final_url}\n\n<page>\n{page}\n</page>\n\nTask: {prompt}")}),
+                ],
+                max_tokens: Some(4000),
+                ..Default::default()
+            };
+            match ctx.shared.client.complete(&req, &ctx.cancel).await {
+                Ok(c) => {
+                    ctx.events.send(AgentEvent::Notice(format!(
+                        "web_fetch digest via {} ({})",
+                        cfg.small_model,
+                        crate::util::fmt_cost(c.usage.cost)
+                    )));
+                    return ToolOutput::ok(format!(
+                        "Answer extracted from {final_url} ({chars} chars) for: {prompt}\n\n{}",
+                        c.text
+                    ))
+                    .with_summary(format!("{chars} chars → digest"));
+                }
+                Err(e) => {
+                    ctx.events.send(AgentEvent::Warning(format!(
+                        "digest failed ({e}); returning raw page"
+                    )));
                 }
             }
         }

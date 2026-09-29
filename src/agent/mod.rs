@@ -136,10 +136,10 @@ impl Agent {
     fn max_tokens(&self) -> u32 {
         let cfg = self.shared.cfg();
         let mut m = cfg.max_output_tokens.max(1024) as u64;
-        if let Some(i) = self.model_info() {
-            if i.max_output > 0 {
-                m = m.min(i.max_output);
-            }
+        if let Some(i) = self.model_info()
+            && i.max_output > 0
+        {
+            m = m.min(i.max_output);
         }
         m.min(self.window() / 3) as u32
     }
@@ -200,15 +200,14 @@ impl Agent {
             r.retain(|n| !matches!(n, "edit" | "multi_edit" | "write" | "apply_patch"));
         }
         let allowed = self.def.as_ref().and_then(|d| d.tools.clone());
-        if let Some(mcp) = &self.shared.mcp {
-            if allowed.is_none()
+        if let Some(mcp) = &self.shared.mcp
+            && (allowed.is_none()
                 || allowed
                     .as_ref()
                     .map(|a| a.iter().any(|t| t.starts_with("mcp__")))
-                    .unwrap_or(false)
-            {
-                r.tools.extend(mcp.tool_objects());
-            }
+                    .unwrap_or(false))
+        {
+            r.tools.extend(mcp.tool_objects());
         }
         if let Some(allowed) = allowed {
             let allowed: Vec<String> = allowed
@@ -235,10 +234,10 @@ impl Agent {
             mode.name(),
             self.def.as_ref().map(|d| d.name.as_str()).unwrap_or("")
         );
-        if let Some((k, s)) = &self.system_cache {
-            if *k == key {
-                return s.clone();
-            }
+        if let Some((k, s)) = &self.system_cache
+            && *k == key
+        {
+            return s.clone();
         }
         let cfg = self.shared.cfg();
         let cwd = self.shared.cwd.lock().clone();
@@ -327,8 +326,8 @@ impl Agent {
         let mut on_event = move |e: StreamEvent| match e {
             StreamEvent::Text(t) => events.send(AgentEvent::Text(t)),
             StreamEvent::Reasoning(r) => events.send(AgentEvent::Reasoning(r)),
-            StreamEvent::ToolCallStart(_, _) => {}
-            StreamEvent::Restart(_) => events.send(AgentEvent::Restart),
+            StreamEvent::ToolCallStart(_, name) => events.send(AgentEvent::ToolPreparing(name)),
+            StreamEvent::Restart => events.send(AgentEvent::Restart),
             StreamEvent::Retrying(m) => events.send(AgentEvent::Retrying(m)),
         };
         let mut c = self
@@ -336,15 +335,15 @@ impl Agent {
             .client
             .stream(&req, cancel, &mut on_event)
             .await?;
-        if c.usage.cost == 0.0 {
-            if let Some(i) = self.model_info() {
-                c.usage.cost = i.estimate_cost(
-                    c.usage.prompt_tokens,
-                    c.usage.cached_tokens,
-                    c.usage.cache_write_tokens,
-                    c.usage.completion_tokens,
-                );
-            }
+        if c.usage.cost == 0.0
+            && let Some(i) = self.model_info()
+        {
+            c.usage.cost = i.estimate_cost(
+                c.usage.prompt_tokens,
+                c.usage.cached_tokens,
+                c.usage.cache_write_tokens,
+                c.usage.completion_tokens,
+            );
         }
         Ok(c)
     }
@@ -424,7 +423,7 @@ impl Agent {
             images: input.images,
             synthetic: false,
         });
-        if self.depth == 0 && !self.title_done {
+        if self.depth == 0 && !self.title_done && self.shared.interactive {
             self.title_done = true;
             self.spawn_title(input.text.clone());
         }
@@ -525,14 +524,14 @@ impl Agent {
                     for w in h.warnings {
                         self.events.warn(w);
                     }
-                    if let Some(b) = h.block {
-                        if verify_rounds < cfg.verify_rounds + 2 {
-                            verify_rounds += 1;
-                            self.push(Item::synthetic(format!(
-                                "A stop hook reported a problem; address it before finishing:\n{b}"
-                            )));
-                            continue;
-                        }
+                    if let Some(b) = h.block
+                        && verify_rounds < cfg.verify_rounds + 2
+                    {
+                        verify_rounds += 1;
+                        self.push(Item::synthetic(format!(
+                            "A stop hook reported a problem; address it before finishing:\n{b}"
+                        )));
+                        continue;
                     }
                 }
                 return StopReason::Done;

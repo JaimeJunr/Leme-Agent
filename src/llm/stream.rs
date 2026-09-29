@@ -100,13 +100,13 @@ impl Accumulator {
         let Some(delta) = delta else { return Ok(()) };
 
         let mut reasoning_emitted = false;
-        if let Some(r) = delta.get("reasoning").and_then(|r| r.as_str()) {
-            if !r.is_empty() {
-                self.got_output = true;
-                self.c.reasoning.push_str(r);
-                on_event(StreamEvent::Reasoning(r.to_string()));
-                reasoning_emitted = true;
-            }
+        if let Some(r) = delta.get("reasoning").and_then(|r| r.as_str())
+            && !r.is_empty()
+        {
+            self.got_output = true;
+            self.c.reasoning.push_str(r);
+            on_event(StreamEvent::Reasoning(r.to_string()));
+            reasoning_emitted = true;
         }
         if let Some(details) = delta.get("reasoning_details").and_then(|d| d.as_array()) {
             for d in details {
@@ -118,12 +118,12 @@ impl Accumulator {
                 }
             }
         }
-        if let Some(t) = delta.get("content").and_then(|t| t.as_str()) {
-            if !t.is_empty() {
-                self.got_output = true;
-                self.c.text.push_str(t);
-                on_event(StreamEvent::Text(t.to_string()));
-            }
+        if let Some(t) = delta.get("content").and_then(|t| t.as_str())
+            && !t.is_empty()
+        {
+            self.got_output = true;
+            self.c.text.push_str(t);
+            on_event(StreamEvent::Text(t.to_string()));
         }
         if let Some(anns) = delta.get("annotations").and_then(|a| a.as_array()) {
             self.c.annotations.extend(anns.iter().cloned());

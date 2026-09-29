@@ -63,6 +63,7 @@ fn is_false(b: &bool) -> bool {
 }
 
 impl Item {
+    #[cfg(test)]
     pub fn user(s: impl Into<String>) -> Item {
         Item::User {
             content: s.into(),

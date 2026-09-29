@@ -30,7 +30,7 @@ verify. Markdown is supported. If approved you can start implementing immediatel
         ToolKind::Read
     }
     fn summarize(&self, _args: &Value) -> String {
-        "plan".into()
+        String::new()
     }
     async fn run(&self, ctx: &ToolCtx, args: Value) -> ToolOutput {
         let plan = match arg_str(&args, "plan") {

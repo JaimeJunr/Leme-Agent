@@ -159,6 +159,7 @@ pub struct App {
     pending_rewind_text: Option<String>,
     dirty: bool,
     tool_outputs: std::collections::HashMap<String, VecDeque<String>>,
+    preparing: Option<String>,
 }
 
 fn tool_label(name: &str) -> String {
@@ -250,6 +251,7 @@ impl App {
             pending_rewind_text: None,
             dirty: true,
             tool_outputs: Default::default(),
+            preparing: None,
         })
     }
 
@@ -264,12 +266,10 @@ impl App {
     // ───────────────────────── output helpers ─────────────────────────
 
     fn gap(&mut self, b: Block) {
-        let need = match (self.last_block, b) {
-            (Block::None, _) => false,
-            (Block::Tool, Block::Tool) => false,
-            (Block::Info, Block::Info) => false,
-            _ => true,
-        };
+        let need = !matches!(
+            (self.last_block, b),
+            (Block::None, _) | (Block::Tool, Block::Tool) | (Block::Info, Block::Info)
+        );
         if need && self.commit.last().map(|l| !l.is_empty()).unwrap_or(true) {
             self.commit.push(Line::new());
         }
@@ -373,6 +373,12 @@ impl App {
         match ev {
             AgentEvent::StepStart { .. } => {
                 self.retry = None;
+                self.preparing = None;
+            }
+            AgentEvent::ToolPreparing(name) => {
+                self.end_reasoning();
+                self.flush_partial(true);
+                self.preparing = Some(name);
             }
             AgentEvent::Reasoning(r) => {
                 if self.reasoning_start.is_none() {
@@ -402,6 +408,7 @@ impl App {
             }
             AgentEvent::Retrying(m) => self.retry = Some(m),
             AgentEvent::ToolStart { id, name, summary } => {
+                self.preparing = None;
                 self.end_reasoning();
                 self.flush_partial(true);
                 self.tools.push(RunningTool {
@@ -601,12 +608,11 @@ impl App {
         let max_lines = if self.verbose { 400 } else { 40 };
         match display {
             Some(Display::Diff { diff, .. }) => {
-                let mut shown = 0;
                 let body: Vec<&str> = diff
                     .lines()
                     .filter(|l| !l.starts_with("---") && !l.starts_with("+++"))
                     .collect();
-                for dl in &body {
+                for (shown, dl) in body.iter().enumerate() {
                     if shown >= max_lines {
                         self.print(Line::styled(
                             format!(
@@ -627,7 +633,6 @@ impl App {
                         Style::fg(theme::MUTED)
                     };
                     self.print(Line::styled(format!("    {dl}"), st));
-                    shown += 1;
                 }
             }
             Some(Display::Todos(todos)) => {
@@ -645,11 +650,6 @@ impl App {
                     self.print(
                         Line::styled(format!("    {icon}"), st).with(t.content.clone(), st2),
                     );
-                }
-            }
-            Some(Display::Text(t)) => {
-                for x in t.lines().take(max_lines) {
-                    self.print(Line::styled(format!("    {x}"), Style::fg(theme::MUTED)));
                 }
             }
             None => {
@@ -752,18 +752,22 @@ impl App {
                 lines.push(Line::styled(format!("⟳ {r}"), Style::fg(theme::WARN)));
             }
             let el = self.turn_started.map(|t| t.elapsed()).unwrap_or_default();
-            let doing = self
-                .todos
-                .iter()
-                .find(|t| t.status == "in_progress")
-                .map(|t| t.content.clone())
-                .unwrap_or_else(|| {
-                    if self.tools.is_empty() {
-                        "Thinking".into()
-                    } else {
-                        "Working".into()
-                    }
-                });
+            let doing = match &self.preparing {
+                // A long tool call (e.g. writing a big file) is streaming.
+                Some(t) if self.tools.is_empty() => format!("Preparing {}", tool_label(t)),
+                _ => self
+                    .todos
+                    .iter()
+                    .find(|t| t.status == "in_progress")
+                    .map(|t| t.content.clone())
+                    .unwrap_or_else(|| {
+                        if self.tools.is_empty() {
+                            "Thinking".into()
+                        } else {
+                            "Working".into()
+                        }
+                    }),
+            };
             let mut l = Line::styled(format!("{spin} "), Style::fg(theme::ACCENT));
             l.push(
                 format!("{}…", crate::util::ellipsize(&doing, 60)),
@@ -819,7 +823,7 @@ impl App {
             }
         }
 
-        let mut cursor = None;
+        let cursor;
         let rule = Line::styled("─".repeat(w), Style::fg(theme::MUTED));
         if let Some(p) = self.prompts.front() {
             lines.push(rule.clone());
@@ -1127,7 +1131,7 @@ impl App {
                     ));
                 }
             }
-            if !items.is_empty() && !(items.len() == 1 && items[0].1 == *text) {
+            if !items.is_empty() && (items.len() != 1 || items[0].1 != *text) {
                 items.truncate(8);
                 self.popup = Some(Popup {
                     items,
@@ -1165,12 +1169,12 @@ impl App {
     }
 
     fn accept_popup(&mut self) -> bool {
-        if let Some(p) = self.popup.take() {
-            if let Some((insert, _, _)) = p.items.get(p.sel) {
-                self.composer.replace_range(p.range.0, p.range.1, insert);
-                self.update_popup();
-                return true;
-            }
+        if let Some(p) = self.popup.take()
+            && let Some((insert, _, _)) = p.items.get(p.sel)
+        {
+            self.composer.replace_range(p.range.0, p.range.1, insert);
+            self.update_popup();
+            return true;
         }
         false
     }
@@ -1430,10 +1434,8 @@ impl App {
                 }
                 _ => {}
             }
-            if ask_up {
-                if let Prompt::Ask { sel, .. } = &mut p {
-                    *sel = sel.saturating_sub(1);
-                }
+            if ask_up && let Prompt::Ask { sel, .. } = &mut p {
+                *sel = sel.saturating_sub(1);
             }
             self.prompts.push_front(p);
             return;
@@ -1680,11 +1682,12 @@ impl App {
             commands::shell(self, cmd.trim()).await;
             return;
         }
-        if let Some(note) = trimmed.strip_prefix('#') {
-            if !note.starts_with('#') && !note.trim().is_empty() {
-                commands::remember(self, note.trim());
-                return;
-            }
+        if let Some(note) = trimmed.strip_prefix('#')
+            && !note.starts_with('#')
+            && !note.trim().is_empty()
+        {
+            commands::remember(self, note.trim());
+            return;
         }
         self.send(text);
     }
@@ -1839,52 +1842,51 @@ impl App {
             info.push_str(&format!(" · {} MCP tools", m.tools.len()));
         }
         if !self.shared.ext.skills.is_empty() {
-            info.push_str(&format!(" · {} skills", self.shared.ext.skills.len()));
+            let n = self.shared.ext.skills.len();
+            info.push_str(&format!(" · {n} skill{}", if n == 1 { "" } else { "s" }));
         }
         self.print(Line::styled(info, Style::fg(theme::MUTED)));
-        if resumed {
-            if let Some(a) = &self.agent {
-                let n = a.user_turns();
-                // Replay the last exchange for context.
-                let last_user = a.items.iter().rev().find_map(|i| match i {
-                    crate::conversation::Item::User {
-                        content,
-                        synthetic: false,
-                        ..
-                    } => Some(content.clone()),
-                    _ => None,
-                });
-                let last_asst = a.items.iter().rev().find_map(|i| match i {
-                    crate::conversation::Item::Assistant { text, .. } if !text.is_empty() => {
-                        Some(text.clone())
-                    }
-                    _ => None,
-                });
-                self.print(Line::styled(
-                    format!(
-                        "  resumed session {} ({n} messages)",
-                        self.shared.session().id
-                    ),
-                    Style::fg(theme::MUTED),
-                ));
-                if let Some(u) = last_user {
-                    self.print(
-                        Line::styled("› ", Style::fg(theme::ACCENT))
-                            .with(crate::util::first_line(&u, 200), Style::default().bold()),
-                    );
+        if resumed && let Some(a) = &self.agent {
+            let n = a.user_turns();
+            // Replay the last exchange for context.
+            let last_user = a.items.iter().rev().find_map(|i| match i {
+                crate::conversation::Item::User {
+                    content,
+                    synthetic: false,
+                    ..
+                } => Some(content.clone()),
+                _ => None,
+            });
+            let last_asst = a.items.iter().rev().find_map(|i| match i {
+                crate::conversation::Item::Assistant { text, .. } if !text.is_empty() => {
+                    Some(text.clone())
                 }
-                if let Some(t) = last_asst {
-                    let snippet: String = t
-                        .lines()
-                        .rev()
-                        .take(6)
-                        .collect::<Vec<_>>()
-                        .into_iter()
-                        .rev()
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    self.markdown(&snippet);
-                }
+                _ => None,
+            });
+            self.print(Line::styled(
+                format!(
+                    "  resumed session {} ({n} messages)",
+                    self.shared.session().id
+                ),
+                Style::fg(theme::MUTED),
+            ));
+            if let Some(u) = last_user {
+                self.print(
+                    Line::styled("› ", Style::fg(theme::ACCENT))
+                        .with(crate::util::first_line(&u, 200), Style::default().bold()),
+                );
+            }
+            if let Some(t) = last_asst {
+                let snippet: String = t
+                    .lines()
+                    .rev()
+                    .take(6)
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .rev()
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                self.markdown(&snippet);
             }
         }
         for w in warnings {
@@ -1905,10 +1907,10 @@ impl App {
         } else {
             self.screen.raw("\x1b]0;harness\x07");
         }
-        if let Some(text) = initial {
-            if !text.trim().is_empty() {
-                self.send(text);
-            }
+        if let Some(text) = initial
+            && !text.trim().is_empty()
+        {
+            self.send(text);
         }
         self.draw();
         let mut last_draw = Instant::now();
@@ -1970,9 +1972,8 @@ impl App {
                         self.spinner += 1;
                         self.dirty = true;
                     }
-                    if let Some((_, t)) = &self.hint {
-                        if t.elapsed() > Duration::from_secs(3) { self.hint = None; }
-                    }
+                    if let Some((_, t)) = &self.hint
+                        && t.elapsed() > Duration::from_secs(3) { self.hint = None; }
                 }
             }
             if self.quit {

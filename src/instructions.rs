@@ -19,15 +19,16 @@ fn read_with_imports(path: &Path, depth: usize) -> Option<String> {
     let mut out = String::new();
     for line in s.lines() {
         let t = line.trim();
-        if let Some(rel) = t.strip_prefix('@') {
-            if !rel.is_empty() && !rel.contains(' ') && (rel.ends_with(".md") || rel.contains('/'))
-            {
-                let p = crate::util::resolve_path(base, rel);
-                if let Some(inc) = read_with_imports(&p, depth + 1) {
-                    out.push_str(&inc);
-                    out.push('\n');
-                    continue;
-                }
+        if let Some(rel) = t.strip_prefix('@')
+            && !rel.is_empty()
+            && !rel.contains(' ')
+            && (rel.ends_with(".md") || rel.contains('/'))
+        {
+            let p = crate::util::resolve_path(base, rel);
+            if let Some(inc) = read_with_imports(&p, depth + 1) {
+                out.push_str(&inc);
+                out.push('\n');
+                continue;
             }
         }
         out.push_str(line);
@@ -60,10 +61,10 @@ pub fn load(root: &Path, cwd: &Path) -> Vec<(PathBuf, String)> {
             .join(".claude")
             .join("CLAUDE.md"),
     ];
-    if let Some(g) = global.iter().find(|p| p.is_file()) {
-        if let Some(s) = read_with_imports(g, 0) {
-            out.push((g.clone(), s));
-        }
+    if let Some(g) = global.iter().find(|p| p.is_file())
+        && let Some(s) = read_with_imports(g, 0)
+    {
+        out.push((g.clone(), s));
     }
     let mut dirs_chain = vec![];
     let mut d = Some(cwd);
@@ -73,10 +74,10 @@ pub fn load(root: &Path, cwd: &Path) -> Vec<(PathBuf, String)> {
             break;
         }
         d = dir.parent();
-        if let Some(p) = d {
-            if !p.starts_with(root) {
-                break;
-            }
+        if let Some(p) = d
+            && !p.starts_with(root)
+        {
+            break;
         }
     }
     dirs_chain.reverse();

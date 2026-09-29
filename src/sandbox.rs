@@ -15,8 +15,21 @@ pub fn writable_roots(root: &Path) -> Vec<PathBuf> {
         root.to_path_buf(),
         PathBuf::from("/tmp"),
         PathBuf::from("/var/tmp"),
-        PathBuf::from("/dev"),
     ];
+    // Character devices tools commonly write to — never block devices.
+    for d in [
+        "/dev/null",
+        "/dev/zero",
+        "/dev/full",
+        "/dev/tty",
+        "/dev/random",
+        "/dev/urandom",
+        "/dev/pts",
+        "/dev/shm",
+        "/dev/ptmx",
+    ] {
+        v.push(PathBuf::from(d));
+    }
     if let Ok(t) = std::env::var("TMPDIR") {
         v.push(PathBuf::from(t));
     }

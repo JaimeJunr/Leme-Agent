@@ -296,14 +296,12 @@ fn format_result(ctx: &ToolCtx, res: &CommandResult, timeout: Duration) -> ToolO
     } else {
         body
     };
-    if truncated {
-        if let Some(p) = ctx.shared.spill("bash", &res.output) {
-            content.push_str(&format!(
-                "\n[full output ({} bytes) saved to {} — use read/grep on it]",
-                res.output.len(),
-                p.display()
-            ));
-        }
+    if truncated && let Some(p) = ctx.shared.spill("bash", &res.output) {
+        content.push_str(&format!(
+            "\n[full output ({} bytes) saved to {} — use read/grep on it]",
+            res.output.len(),
+            p.display()
+        ));
     }
     let dur = crate::util::fmt_duration(res.duration);
     let mut is_error = false;
@@ -395,10 +393,10 @@ impl Drop for Jobs {
 }
 
 fn poll(j: &mut Job) -> Option<i32> {
-    if j.exit.is_none() {
-        if let Ok(Some(st)) = j.child.try_wait() {
-            j.exit = Some(st.code().unwrap_or(-1));
-        }
+    if j.exit.is_none()
+        && let Ok(Some(st)) = j.child.try_wait()
+    {
+        j.exit = Some(st.code().unwrap_or(-1));
     }
     j.exit
 }

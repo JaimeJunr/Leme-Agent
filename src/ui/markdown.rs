@@ -348,31 +348,28 @@ pub fn inline(s: &str, base: Style, out: &mut Line) {
                 continue;
             }
         }
-        if c == '[' {
-            if let Some(close) = chars[i..].iter().position(|c| *c == ']').map(|p| p + i) {
-                if chars.get(close + 1) == Some(&'(') {
-                    if let Some(end) = chars[close..]
-                        .iter()
-                        .position(|c| *c == ')')
-                        .map(|p| p + close)
-                    {
-                        out.push(std::mem::take(&mut buf), style_of(bold, italic, strike));
-                        let text: String = chars[i + 1..close].iter().collect();
-                        let url: String = chars[close + 2..end].iter().collect();
-                        out.push(
-                            text.clone(),
-                            style_of(bold, italic, strike)
-                                .with_fg(theme::ACCENT)
-                                .underline(),
-                        );
-                        if url != text && !url.starts_with('#') {
-                            out.push(format!(" ({url})"), Style::fg(theme::MUTED));
-                        }
-                        i = end + 1;
-                        continue;
-                    }
-                }
+        if c == '['
+            && let Some(close) = chars[i..].iter().position(|c| *c == ']').map(|p| p + i)
+            && chars.get(close + 1) == Some(&'(')
+            && let Some(end) = chars[close..]
+                .iter()
+                .position(|c| *c == ')')
+                .map(|p| p + close)
+        {
+            out.push(std::mem::take(&mut buf), style_of(bold, italic, strike));
+            let text: String = chars[i + 1..close].iter().collect();
+            let url: String = chars[close + 2..end].iter().collect();
+            out.push(
+                text.clone(),
+                style_of(bold, italic, strike)
+                    .with_fg(theme::ACCENT)
+                    .underline(),
+            );
+            if url != text && !url.starts_with('#') {
+                out.push(format!(" ({url})"), Style::fg(theme::MUTED));
             }
+            i = end + 1;
+            continue;
         }
         buf.push(c);
         i += 1;
@@ -586,11 +583,11 @@ pub fn highlight(line: &str, lang: &str) -> Vec<(String, Style)> {
     // merge adjacent default-styled chunks
     let mut merged: Vec<(String, Style)> = vec![];
     for (t, s) in out {
-        if let Some(last) = merged.last_mut() {
-            if last.1 == s {
-                last.0.push_str(&t);
-                continue;
-            }
+        if let Some(last) = merged.last_mut()
+            && last.1 == s
+        {
+            last.0.push_str(&t);
+            continue;
         }
         merged.push((t, s));
     }

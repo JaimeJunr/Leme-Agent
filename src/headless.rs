@@ -40,9 +40,18 @@ fn event_json(e: &AgentEvent) -> Option<serde_json::Value> {
             summary,
             result,
             is_error,
-            ..
+            display,
         } => {
-            json!({"type": "tool_end", "id": id, "name": name, "summary": summary, "result": result, "is_error": is_error})
+            let mut v = json!({"type": "tool_end", "id": id, "name": name, "summary": summary, "result": result, "is_error": is_error});
+            match display {
+                Some(crate::tools::Display::Diff { path, diff }) => {
+                    v["path"] = json!(path);
+                    v["diff"] = json!(diff);
+                }
+                Some(crate::tools::Display::Todos(t)) => v["todos"] = json!(t),
+                None => {}
+            }
+            v
         }
         AgentEvent::Usage {
             last,
@@ -71,7 +80,7 @@ fn event_json(e: &AgentEvent) -> Option<serde_json::Value> {
         AgentEvent::TurnEnd { reason } => {
             json!({"type": "turn_end", "reason": format!("{reason:?}")})
         }
-        AgentEvent::ToolProgress { .. } => return None,
+        AgentEvent::ToolProgress { .. } | AgentEvent::ToolPreparing(_) => return None,
         AgentEvent::Approval(_) | AgentEvent::Ask(_) | AgentEvent::Plan(_) => return None,
     })
 }
@@ -138,9 +147,8 @@ pub async fn run(
                             _ => {}
                         },
                         Format::Json => {
-                            if let AgentEvent::Warning(m) = &ev {
-                                if verbose { let _ = writeln!(stderr, "warning: {m}"); }
-                            }
+                            if let AgentEvent::Warning(m) = &ev
+                                && verbose { let _ = writeln!(stderr, "warning: {m}"); }
                         }
                     }
                 }
@@ -148,10 +156,10 @@ pub async fn run(
         }
     };
     while let Ok(ev) = rx.try_recv() {
-        if format == Format::StreamJson {
-            if let Some(v) = event_json(&ev) {
-                let _ = writeln!(stdout, "{v}");
-            }
+        if format == Format::StreamJson
+            && let Some(v) = event_json(&ev)
+        {
+            let _ = writeln!(stdout, "{v}");
         }
     }
     let final_text = agent
@@ -170,10 +178,10 @@ pub async fn run(
         StopReason::Budget | StopReason::MaxSteps => 2,
         StopReason::Error(_) => 1,
     };
-    if let StopReason::Error(e) = &reason {
-        if format == Format::Text {
-            let _ = writeln!(stderr, "error: {e}");
-        }
+    if let StopReason::Error(e) = &reason
+        && format == Format::Text
+    {
+        let _ = writeln!(stderr, "error: {e}");
     }
     if matches!(format, Format::Json | Format::StreamJson) {
         let v = json!({

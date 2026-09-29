@@ -30,14 +30,14 @@ pub async fn run(
 ) -> HookOutcome {
     let mut out = HookOutcome::default();
     for h in hooks.iter().filter(|h| h.event == event) {
-        if let Some(t) = tool {
-            if !h.matcher.is_empty() {
-                let re = regex::Regex::new(&format!("^(?:{})$", h.matcher));
-                match re {
-                    Ok(re) if re.is_match(t) => {}
-                    Ok(_) => continue,
-                    Err(_) => continue,
-                }
+        if let Some(t) = tool
+            && !h.matcher.is_empty()
+        {
+            let re = regex::Regex::new(&format!("^(?:{})$", h.matcher));
+            match re {
+                Ok(re) if re.is_match(t) => {}
+                Ok(_) => continue,
+                Err(_) => continue,
             }
         }
         let mut cmd = tokio::process::Command::new("bash");

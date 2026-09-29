@@ -83,7 +83,6 @@ pub struct Command {
     pub argument_hint: String,
     pub model: Option<String>,
     pub body: String,
-    pub source: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -224,7 +223,6 @@ impl Extensions {
                     argument_hint: fm.fields.get("argument-hint").cloned().unwrap_or_default(),
                     model: fm.fields.get("model").cloned().filter(|m| !m.is_empty()),
                     body: fm.body,
-                    source: path,
                     name,
                 });
             }

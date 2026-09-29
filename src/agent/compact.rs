@@ -80,13 +80,13 @@ The remaining work in order. State exactly what you were doing immediately befor
 
 Be dense and precise: concrete names, paths, commands, values. No preamble.",
     );
-    if let Some(c) = custom {
-        if !c.trim().is_empty() {
-            s.push_str(&format!(
-                "\n\nAdditional focus requested by the user: {}",
-                c.trim()
-            ));
-        }
+    if let Some(c) = custom
+        && !c.trim().is_empty()
+    {
+        s.push_str(&format!(
+            "\n\nAdditional focus requested by the user: {}",
+            c.trim()
+        ));
     }
     s
 }

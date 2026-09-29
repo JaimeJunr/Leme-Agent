@@ -202,12 +202,14 @@ pub async fn boot(
     tweak: impl FnOnce(&mut crate::config::Config),
 ) -> crate::app::Booted {
     env();
-    let mut cfg = crate::config::Config::default();
-    cfg.base_url = format!("{}/api/v1", mock.url);
-    cfg.model = "test/model".into();
-    cfg.small_model = "test/model".into();
-    cfg.mode = mode.into();
-    cfg.notify = false;
+    let mut cfg = crate::config::Config {
+        base_url: format!("{}/api/v1", mock.url),
+        model: "test/model".into(),
+        small_model: "test/model".into(),
+        mode: mode.into(),
+        notify: false,
+        ..Default::default()
+    };
     tweak(&mut cfg);
     let opts = crate::app::BootOptions {
         interactive: false,

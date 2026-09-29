@@ -108,10 +108,10 @@ impl McpServer {
                         let _ = resp_tx.send(json!({"jsonrpc": "2.0", "id": id, "result": result}));
                         continue;
                     }
-                    if let Some(id) = v.get("id").and_then(|i| i.as_u64()) {
-                        if let Some(tx) = p2.lock().remove(&id) {
-                            let _ = tx.send(v);
-                        }
+                    if let Some(id) = v.get("id").and_then(|i| i.as_u64())
+                        && let Some(tx) = p2.lock().remove(&id)
+                    {
+                        let _ = tx.send(v);
                     }
                 }
             });
@@ -270,10 +270,10 @@ impl McpServer {
                     .map(|l| l.trim_start())
                     .collect::<Vec<_>>()
                     .join("\n");
-                if let Ok(v) = serde_json::from_str::<Value>(&data) {
-                    if v.get("id").and_then(|i| i.as_u64()) == Some(id) {
-                        return Ok(v);
-                    }
+                if let Ok(v) = serde_json::from_str::<Value>(&data)
+                    && v.get("id").and_then(|i| i.as_u64()) == Some(id)
+                {
+                    return Ok(v);
                 }
             }
             bail!("no response in MCP event stream")
@@ -504,17 +504,15 @@ impl Tool for McpTool {
                         }
                     }
                 }
-                if let Some(sc) = res.get("structuredContent") {
-                    if text.trim().is_empty() {
-                        text = serde_json::to_string_pretty(sc).unwrap_or_default();
-                    }
+                if let Some(sc) = res.get("structuredContent")
+                    && text.trim().is_empty()
+                {
+                    text = serde_json::to_string_pretty(sc).unwrap_or_default();
                 }
                 let (body, truncated) = crate::util::head_tail(&text, 2000, 60_000);
                 let mut body = body;
-                if truncated {
-                    if let Some(p) = ctx.shared.spill("mcp", &text) {
-                        body.push_str(&format!("\n[full output saved to {}]", p.display()));
-                    }
+                if truncated && let Some(p) = ctx.shared.spill("mcp", &text) {
+                    body.push_str(&format!("\n[full output saved to {}]", p.display()));
                 }
                 let is_error = res
                     .get("isError")

@@ -366,8 +366,8 @@ async fn models(query: &str, all: bool) -> Result<i32> {
         list.retain(|m| m.supports_tools);
     }
     println!(
-        "{:<48} {:>8} {:>9} {:>9}  {}",
-        "MODEL", "CONTEXT", "IN $/M", "OUT $/M", "FEATURES"
+        "{:<48} {:>8} {:>9} {:>9}  FEATURES",
+        "MODEL", "CONTEXT", "IN $/M", "OUT $/M"
     );
     for m in &list {
         let mut feats = vec![];

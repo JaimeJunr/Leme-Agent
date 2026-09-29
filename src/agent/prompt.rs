@@ -106,12 +106,12 @@ pub fn build(inp: &PromptInputs) -> String {
             ));
         }
     }
-    if let Some(extra) = inp.extra {
-        if !extra.trim().is_empty() {
-            s.push_str("\n# Additional instructions\n");
-            s.push_str(extra.trim());
-            s.push('\n');
-        }
+    if let Some(extra) = inp.extra
+        && !extra.trim().is_empty()
+    {
+        s.push_str("\n# Additional instructions\n");
+        s.push_str(extra.trim());
+        s.push('\n');
     }
     if inp.mode == Mode::Plan {
         s.push('\n');

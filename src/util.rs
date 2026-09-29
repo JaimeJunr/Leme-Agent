@@ -133,10 +133,10 @@ pub fn display_path(root: &Path, p: &Path) -> String {
         Ok(rel) if !rel.as_os_str().is_empty() => rel.display().to_string(),
         Ok(_) => ".".to_string(),
         Err(_) => {
-            if let Some(home) = dirs::home_dir() {
-                if let Ok(rel) = p.strip_prefix(&home) {
-                    return format!("~/{}", rel.display());
-                }
+            if let Some(home) = dirs::home_dir()
+                && let Ok(rel) = p.strip_prefix(&home)
+            {
+                return format!("~/{}", rel.display());
             }
             p.display().to_string()
         }
@@ -210,12 +210,11 @@ pub fn parse_json_lenient(raw: &str) -> Result<serde_json::Value, String> {
     }
     if let Ok(v) = serde_json::from_str::<serde_json::Value>(t) {
         // Some models double-encode the arguments as a JSON string.
-        if let serde_json::Value::String(inner) = &v {
-            if let Ok(iv) = serde_json::from_str::<serde_json::Value>(inner) {
-                if iv.is_object() {
-                    return Ok(iv);
-                }
-            }
+        if let serde_json::Value::String(inner) = &v
+            && let Ok(iv) = serde_json::from_str::<serde_json::Value>(inner)
+            && iv.is_object()
+        {
+            return Ok(iv);
         }
         return Ok(v);
     }

@@ -158,7 +158,6 @@ async fn retries_transient_errors() {
     let dir = tempfile::tempdir().unwrap();
     let mock = Mock::start(vec![Resp::Status(503, "overloaded".into()), say("hello")]).await;
     let mut b = boot(dir.path(), &mock, "default", |_| {}).await;
-    b.agent.shared.client.clone();
     assert_eq!(run(&mut b.agent, "hi").await, StopReason::Done);
     assert_eq!(mock.requests().len(), 2);
 }

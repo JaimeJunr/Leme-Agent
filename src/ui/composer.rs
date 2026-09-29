@@ -19,7 +19,7 @@ pub struct Composer {
 fn prev_boundary(s: &str, i: usize) -> usize {
     s[..i]
         .grapheme_indices(true)
-        .last()
+        .next_back()
         .map(|(j, _)| j)
         .unwrap_or(0)
 }
@@ -88,14 +88,13 @@ impl Composer {
             return;
         }
         // Delete a whole paste placeholder at once.
-        if self.text[..self.cursor].ends_with(']') {
-            if let Some(start) = self.text[..self.cursor].rfind("[Pasted text #") {
-                if !self.text[start..self.cursor].contains('\n') {
-                    self.text.replace_range(start..self.cursor, "");
-                    self.cursor = start;
-                    return;
-                }
-            }
+        if self.text[..self.cursor].ends_with(']')
+            && let Some(start) = self.text[..self.cursor].rfind("[Pasted text #")
+            && !self.text[start..self.cursor].contains('\n')
+        {
+            self.text.replace_range(start..self.cursor, "");
+            self.cursor = start;
+            return;
         }
         let p = prev_boundary(&self.text, self.cursor);
         self.text.replace_range(p..self.cursor, "");
