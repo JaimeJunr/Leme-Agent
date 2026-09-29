@@ -46,7 +46,7 @@ async fn fetch_text(ctx: &ToolCtx, url: &str) -> Result<(String, String), String
         .timeout(Duration::from_secs(40))
         .header(
             "User-Agent",
-            "Mozilla/5.0 (compatible; leme/0.1; +https://github.com/jaimejunr/harness)",
+            "Mozilla/5.0 (compatible; leme/0.1; +https://github.com/JaimeJunr/Leme-Agent)",
         )
         .header(
             "Accept",

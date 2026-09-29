@@ -189,7 +189,7 @@ impl LlmClient {
         self.http
             .post(format!("{}{}", self.base_url, path))
             .bearer_auth(&self.api_key)
-            .header("HTTP-Referer", "https://github.com/jaimejunr/harness")
+            .header("HTTP-Referer", "https://github.com/JaimeJunr/Leme-Agent")
             .header("X-Title", "leme")
     }
 
@@ -197,7 +197,7 @@ impl LlmClient {
         self.http
             .get(format!("{}{}", self.base_url, path))
             .bearer_auth(&self.api_key)
-            .header("HTTP-Referer", "https://github.com/jaimejunr/harness")
+            .header("HTTP-Referer", "https://github.com/JaimeJunr/Leme-Agent")
             .header("X-Title", "leme")
     }
 

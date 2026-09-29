@@ -84,9 +84,9 @@ and squeezes the most out of it, while matching the workflow features of the bes
 From source (Rust ≥ 1.85):
 
 ```sh
-cargo install --git https://github.com/jaimejunr/harness
+cargo install --git https://github.com/JaimeJunr/Leme-Agent
 # or
-git clone https://github.com/jaimejunr/harness && cd harness && cargo build --release
+git clone https://github.com/JaimeJunr/Leme-Agent && cd Leme-Agent && cargo build --release
 ./target/release/leme --version
 ```
 

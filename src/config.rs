@@ -373,7 +373,7 @@ pub fn persist_allow_rule(root: &Path, rule: &str) -> Result<()> {
     Ok(())
 }
 
-pub const TEMPLATE: &str = r#"# leme configuration — https://github.com/jaimejunr/harness
+pub const TEMPLATE: &str = r#"# leme configuration — https://github.com/JaimeJunr/Leme-Agent
 # Any OpenRouter model id works: https://openrouter.ai/models
 
 model = "anthropic/claude-sonnet-5.5"
